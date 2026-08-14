@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/features/aiconsultant/index.ts","./src/features/commandcenter/index.ts","./src/features/datamapper/index.ts","./src/features/processexplorer/index.ts","./src/features/roistudio/index.ts","./src/services/api.ts"],"version":"5.9.3"}
