@@ -60,3 +60,48 @@ export async function uploadMapperFile(file: File): Promise<MapperUploadPreviewR
   return response.json();
 }
 
+export type ProcessGraphNode = {
+  id: string;
+  label: string;
+  count: number;
+  type: 'activity' | 'start' | 'end';
+};
+
+export type ProcessGraphEdge = {
+  source: string;
+  target: string;
+  count: number;
+};
+
+export type ProcessGraphResponse = {
+  nodes: ProcessGraphNode[];
+  edges: ProcessGraphEdge[];
+};
+
+export async function discoverProcessGraph(
+  rows: Array<Record<string, unknown>>,
+  caseIdCol: string,
+  activityCol: string,
+  timestampCol: string,
+): Promise<ProcessGraphResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/explorer/discover-graph`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      rows,
+      case_id_col: caseIdCol,
+      activity_col: activityCol,
+      timestamp_col: timestampCol,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to discover process graph');
+  }
+
+  return response.json();
+}
+
