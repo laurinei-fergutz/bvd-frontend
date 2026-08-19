@@ -88,7 +88,7 @@ const NODE_COLORS: Record<ProcessGraphNode['type'], { fill: string; stroke: stri
   activity: { fill: '#1f2937', stroke: '#3b82f6' },
 };
 
-function edgePath(source: LayoutNode, target: LayoutNode): string {
+function edgeControlPoints(source: LayoutNode, target: LayoutNode): [number, number][] {
   const startX = source.x + NODE_WIDTH;
   const startY = source.y + NODE_HEIGHT / 2;
   const endX = target.x;
@@ -97,11 +97,52 @@ function edgePath(source: LayoutNode, target: LayoutNode): string {
   if (target.layer <= source.layer) {
     // Backward / self edge (a rework loop): arc below the nodes instead of
     // cutting straight through the boxes in between.
-    return `M ${startX} ${startY} C ${startX + 70} ${startY + 70}, ${endX - 70} ${endY + 70}, ${endX} ${endY}`;
+    return [
+      [startX, startY],
+      [startX + 70, startY + 70],
+      [endX - 70, endY + 70],
+      [endX, endY],
+    ];
   }
 
   const midX = (startX + endX) / 2;
-  return `M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`;
+  return [
+    [startX, startY],
+    [midX, startY],
+    [midX, endY],
+    [endX, endY],
+  ];
+}
+
+function edgePath(source: LayoutNode, target: LayoutNode): string {
+  const [p0, p1, p2, p3] = edgeControlPoints(source, target);
+  return `M ${p0[0]} ${p0[1]} C ${p1[0]} ${p1[1]}, ${p2[0]} ${p2[1]}, ${p3[0]} ${p3[1]}`;
+}
+
+/** Point at t=0.5 along the cubic bezier used by edgePath, for label placement. */
+function edgeMidpoint(source: LayoutNode, target: LayoutNode): { x: number; y: number } {
+  const [p0, p1, p2, p3] = edgeControlPoints(source, target);
+  const x = 0.125 * p0[0] + 0.375 * p1[0] + 0.375 * p2[0] + 0.125 * p3[0];
+  const y = 0.125 * p0[1] + 0.375 * p1[1] + 0.375 * p2[1] + 0.125 * p3[1];
+  return { x, y };
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 1) return '<1s';
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+
+  const minutes = seconds / 60;
+  if (minutes < 60) return `${Math.round(minutes)}min`;
+
+  const hours = minutes / 60;
+  if (hours < 24) return `${trimDecimal(hours)}h`;
+
+  const days = hours / 24;
+  return `${trimDecimal(days)}d`;
+}
+
+function trimDecimal(value: number): string {
+  return value.toFixed(1).replace(/\.0$/, '');
 }
 
 export default function ProcessGraph({ graph }: { graph: ProcessGraphResponse }) {
@@ -125,17 +166,34 @@ export default function ProcessGraph({ graph }: { graph: ProcessGraphResponse })
         if (!source || !target) return null;
 
         const strokeWidth = clamp(1 + (edge.count / maxEdgeCount) * 4, 1, 5);
+        const mid = edgeMidpoint(source, target);
 
         return (
-          <path
-            key={`${edge.source}->${edge.target}-${idx}`}
-            d={edgePath(source, target)}
-            fill="none"
-            stroke="#64748b"
-            strokeWidth={strokeWidth}
-            opacity={0.8}
-            markerEnd="url(#process-graph-arrow)"
-          />
+          <g key={`${edge.source}->${edge.target}-${idx}`}>
+            <path
+              d={edgePath(source, target)}
+              fill="none"
+              stroke="#64748b"
+              strokeWidth={strokeWidth}
+              opacity={0.8}
+              markerEnd="url(#process-graph-arrow)"
+            />
+            {edge.avg_duration_seconds != null && (
+              <text
+                x={mid.x}
+                y={mid.y}
+                textAnchor="middle"
+                fill="#facc15"
+                fontSize={11}
+                fontWeight={600}
+                paintOrder="stroke"
+                stroke="#0b1220"
+                strokeWidth={4}
+              >
+                {formatDuration(edge.avg_duration_seconds)}
+              </text>
+            )}
+          </g>
         );
       })}
 
@@ -148,7 +206,7 @@ export default function ProcessGraph({ graph }: { graph: ProcessGraphResponse })
               {node.label.length > 20 ? `${node.label.slice(0, 18)}…` : node.label}
             </text>
             <text x={NODE_WIDTH / 2} y={NODE_HEIGHT / 2 + 14} textAnchor="middle" fill="#9ca3af" fontSize={11}>
-              {node.count} {node.count === 1 ? 'evento' : 'eventos'}
+              {node.count} {node.count === 1 ? 'ocorrência' : 'ocorrências'}
             </text>
           </g>
         );

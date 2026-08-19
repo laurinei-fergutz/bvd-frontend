@@ -72,6 +72,7 @@ export type ProcessGraphEdge = {
   source: string;
   target: string;
   count: number;
+  avg_duration_seconds: number | null;
 };
 
 export type ProcessGraphResponse = {
