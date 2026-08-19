@@ -22,6 +22,7 @@ export type MapperUploadPreviewResponse = {
   suggested_case_id_col: string | null;
   suggested_activity_col: string | null;
   suggested_timestamp_col: string | null;
+  suggested_resource_col: string | null;
 };
 
 export async function fetchHealth() {
@@ -59,6 +60,52 @@ export async function uploadMapperFile(file: File): Promise<MapperUploadPreviewR
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || 'Failed to upload mapper file');
+  }
+
+  return response.json();
+}
+
+export type EventLogRow = Record<string, string | number | boolean | null>;
+
+export type SanitizationReport = {
+  total_rows_in: number;
+  rows_dropped_missing_case_id: number;
+  rows_dropped_missing_timestamp: number;
+  timestamps_normalized: number;
+  activities_trimmed: number;
+  total_rows_out: number;
+  total_cases: number;
+};
+
+export type EventLogValidateResponse = {
+  rows: EventLogRow[];
+  report: SanitizationReport;
+};
+
+export async function validateEventLog(
+  rows: EventLogRow[],
+  caseIdCol: string,
+  activityCol: string,
+  timestampCol: string,
+  resourceCol?: string,
+): Promise<EventLogValidateResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/mapper/validate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      rows,
+      case_id_col: caseIdCol,
+      activity_col: activityCol,
+      timestamp_col: timestampCol,
+      resource_col: resourceCol || null,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to validate event log');
   }
 
   return response.json();
