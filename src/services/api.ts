@@ -18,6 +18,7 @@ export type MapperUploadPreviewResponse = {
   row_count: number;
   columns: MapperColumn[];
   sample_rows: Array<Record<string, string | number | boolean | null>>;
+  rows: Array<Record<string, string | number | boolean | null>>;
 };
 
 export async function fetchHealth() {

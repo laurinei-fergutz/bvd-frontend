@@ -1,13 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 import { uploadMapperFile, discoverProcessGraph, type MapperUploadPreviewResponse, type ProcessGraphResponse } from './services/api';
 import ProcessGraph from './components/ProcessGraph';
 
-interface CSVData {
-  filename: string;
-  rows: Array<Record<string, string>>;
-  rowCount: number;
-}
+const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx'];
 
 const selectStyle: React.CSSProperties = {
   width: '100%',
@@ -27,27 +23,12 @@ function guessColumn(columns: string[], patterns: string[]): string {
   return columns[0] ?? '';
 }
 
-function parseCSV(content: string): Array<Record<string, string>> {
-  const lines = content.trim().split('\n');
-  if (lines.length < 2) return [];
-
-  const headers = lines[0].split(',').map((h) => h.trim());
-  const rows: Array<Record<string, string>> = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map((v) => v.trim());
-    const row: Record<string, string> = {};
-    headers.forEach((header, idx) => {
-      row[header] = values[idx] || '';
-    });
-    rows.push(row);
-  }
-
-  return rows;
+function hasAcceptedExtension(filename: string): boolean {
+  const lowered = filename.toLowerCase();
+  return ACCEPTED_EXTENSIONS.some((ext) => lowered.endsWith(ext));
 }
 
 export default function App() {
-  const [csvData, setCSVData] = useState<CSVData | null>(null);
   const [response, setResponse] = useState<MapperUploadPreviewResponse | null>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -61,42 +42,31 @@ export default function App() {
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphError, setGraphError] = useState('');
 
-  const handleFileChange = (file: File) => {
-    if (!file.name.endsWith('.csv')) {
-      setError('Por favor, selecione um arquivo CSV');
+  const handleFileChange = async (file: File) => {
+    if (!hasAcceptedExtension(file.name)) {
+      setError('Por favor, selecione um arquivo CSV ou Excel (.xlsx)');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const rows = parseCSV(content);
+    setLoading(true);
+    setError('');
+    setResponse(null);
+    setGraphData(null);
+    setGraphError('');
 
-        if (rows.length === 0) {
-          setError('Arquivo CSV vazio ou inválido');
-          return;
-        }
+    try {
+      const result = await uploadMapperFile(file);
+      setResponse(result);
 
-        setCSVData({
-          filename: file.name,
-          rows,
-          rowCount: rows.length,
-        });
-        setError('');
-        setResponse(null);
-
-        const columns = Object.keys(rows[0] ?? {});
-        setCaseIdCol(guessColumn(columns, ['case_id', 'caseid', 'case']));
-        setActivityCol(guessColumn(columns, ['activity', 'atividade', 'step', 'evento']));
-        setTimestampCol(guessColumn(columns, ['timestamp', 'time', 'data', 'date']));
-        setGraphData(null);
-        setGraphError('');
-      } catch (err) {
-        setError(`Erro ao ler arquivo: ${err instanceof Error ? err.message : 'desconhecido'}`);
-      }
-    };
-    reader.readAsText(file);
+      const columns = Object.keys(result.rows[0] ?? {});
+      setCaseIdCol(guessColumn(columns, ['case_id', 'caseid', 'case']));
+      setActivityCol(guessColumn(columns, ['activity', 'atividade', 'step', 'evento']));
+      setTimestampCol(guessColumn(columns, ['timestamp', 'time', 'data', 'date']));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao enviar arquivo');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -120,32 +90,8 @@ export default function App() {
     }
   };
 
-  const handleUpload = async () => {
-    if (!csvData) {
-      setError('Nenhum arquivo selecionado');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      // Create a File object from csvData
-      const file = new File([csvData.rows.map((row) => Object.values(row).join(',')).join('\n')], csvData.filename, {
-        type: 'text/csv',
-      });
-
-      const result = await uploadMapperFile(file);
-      setResponse(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao enviar arquivo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleGenerateGraph = async () => {
-    if (!csvData) return;
+    if (!response) return;
 
     if (!caseIdCol || !activityCol || !timestampCol) {
       setGraphError('Selecione as três colunas antes de gerar o grafo');
@@ -156,7 +102,7 @@ export default function App() {
     setGraphError('');
 
     try {
-      const result = await discoverProcessGraph(csvData.rows, caseIdCol, activityCol, timestampCol);
+      const result = await discoverProcessGraph(response.rows, caseIdCol, activityCol, timestampCol);
       setGraphData(result);
     } catch (err) {
       setGraphError(err instanceof Error ? err.message : 'Erro ao gerar grafo do processo');
@@ -196,12 +142,14 @@ export default function App() {
             if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
           }}
         >
-          <p style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📤 Arraste um arquivo CSV aqui</p>
+          <p style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
+            {loading ? '⏳ Processando arquivo...' : '📤 Arraste um arquivo CSV ou Excel (.xlsx) aqui'}
+          </p>
           <p style={{ color: '#9ca3af' }}>ou clique para selecionar</p>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFileChange(file);
@@ -209,94 +157,6 @@ export default function App() {
             style={{ display: 'none' }}
           />
         </div>
-
-        {/* File Info */}
-        {csvData && (
-          <div
-            style={{
-              background: '#1f2937',
-              padding: '1.5rem',
-              borderRadius: '8px',
-              marginTop: '1.5rem',
-              border: '1px solid #374151',
-            }}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Arquivo</p>
-                <p style={{ fontWeight: 'bold' }}>{csvData.filename}</p>
-              </div>
-              <div>
-                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Linhas</p>
-                <p style={{ fontWeight: 'bold' }}>{csvData.rowCount}</p>
-              </div>
-              <div>
-                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Colunas</p>
-                <p style={{ fontWeight: 'bold' }}>{csvData.rows[0] ? Object.keys(csvData.rows[0]).length : 0}</p>
-              </div>
-            </div>
-
-            {/* Preview */}
-            <h3 style={{ marginBottom: '0.5rem' }}>Preview (primeiras linhas)</h3>
-            <div
-              style={{
-                overflowX: 'auto',
-                background: '#111827',
-                padding: '1rem',
-                borderRadius: '4px',
-              }}
-            >
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '0.875rem',
-                }}
-              >
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #374151' }}>
-                    {Object.keys(csvData.rows[0] || {}).map((col) => (
-                      <th key={col} style={{ padding: '0.5rem', textAlign: 'left', color: '#9ca3af' }}>
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {csvData.rows.slice(0, 5).map((row, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #1f2937' }}>
-                      {Object.values(row).map((val, jdx) => (
-                        <td key={jdx} style={{ padding: '0.5rem' }}>
-                          {val}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleUpload}
-              disabled={loading}
-              style={{
-                marginTop: '1.5rem',
-                background: loading ? '#4b5563' : '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '0.75rem 1.5rem',
-                fontSize: '1rem',
-                fontWeight: 'bold',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.2s ease',
-              }}
-            >
-              {loading ? '⏳ Processando...' : '🚀 Analisar Schema'}
-            </button>
-          </div>
-        )}
 
         {/* Error Message */}
         {error && (
@@ -325,6 +185,56 @@ export default function App() {
               border: '1px solid #10b981',
             }}
           >
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Arquivo</p>
+                <p style={{ fontWeight: 'bold' }}>{response.filename}</p>
+              </div>
+              <div>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Linhas</p>
+                <p style={{ fontWeight: 'bold' }}>{response.row_count}</p>
+              </div>
+              <div>
+                <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Colunas</p>
+                <p style={{ fontWeight: 'bold' }}>{response.columns.length}</p>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <h3 style={{ marginBottom: '0.5rem' }}>Preview (primeiras linhas)</h3>
+            <div
+              style={{
+                overflowX: 'auto',
+                background: '#111827',
+                padding: '1rem',
+                borderRadius: '4px',
+                marginBottom: '1.5rem',
+              }}
+            >
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #374151' }}>
+                    {Object.keys(response.sample_rows[0] || {}).map((col) => (
+                      <th key={col} style={{ padding: '0.5rem', textAlign: 'left', color: '#9ca3af' }}>
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {response.sample_rows.map((row, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #1f2937' }}>
+                      {Object.values(row).map((val, jdx) => (
+                        <td key={jdx} style={{ padding: '0.5rem' }}>
+                          {String(val)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
             <h3 style={{ color: '#10b981', marginBottom: '1rem' }}>✅ Schema Inferido com Sucesso!</h3>
 
             {/* Schema Table */}
@@ -385,7 +295,7 @@ export default function App() {
       </section>
 
       {/* ProcessExplorer Section */}
-      {csvData && (
+      {response && (
         <section style={{ marginTop: '3rem' }}>
           <h2>🔀 Module 1: ProcessExplorer</h2>
           <p style={{ color: '#9ca3af' }}>Selecione as colunas do log para montar o grafo do processo (via pm4py)</p>
@@ -396,7 +306,7 @@ export default function App() {
                 Coluna de Case ID
               </label>
               <select value={caseIdCol} onChange={(e) => setCaseIdCol(e.target.value)} style={selectStyle}>
-                {Object.keys(csvData.rows[0] || {}).map((col) => (
+                {Object.keys(response.rows[0] || {}).map((col) => (
                   <option key={col} value={col}>
                     {col}
                   </option>
@@ -408,7 +318,7 @@ export default function App() {
                 Coluna de Atividade
               </label>
               <select value={activityCol} onChange={(e) => setActivityCol(e.target.value)} style={selectStyle}>
-                {Object.keys(csvData.rows[0] || {}).map((col) => (
+                {Object.keys(response.rows[0] || {}).map((col) => (
                   <option key={col} value={col}>
                     {col}
                   </option>
@@ -420,7 +330,7 @@ export default function App() {
                 Coluna de Timestamp
               </label>
               <select value={timestampCol} onChange={(e) => setTimestampCol(e.target.value)} style={selectStyle}>
-                {Object.keys(csvData.rows[0] || {}).map((col) => (
+                {Object.keys(response.rows[0] || {}).map((col) => (
                   <option key={col} value={col}>
                     {col}
                   </option>
@@ -476,7 +386,7 @@ export default function App() {
       <section style={{ marginTop: '3rem', padding: '1.5rem', background: '#111827', borderRadius: '8px', border: '1px solid #374151' }}>
         <h3>ℹ️ Sobre o DataMapper</h3>
         <ul style={{ color: '#d1d5db', lineHeight: '1.8' }}>
-          <li>✓ Upload de arquivos CSV com drag & drop</li>
+          <li>✓ Upload de arquivos CSV ou Excel (.xlsx) com drag & drop</li>
           <li>✓ Análise automática de tipos de dados (string, integer, float, datetime, boolean)</li>
           <li>✓ Preview interativo dos dados</li>
           <li>✓ Schema inferido em tempo real</li>
