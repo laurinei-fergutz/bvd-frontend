@@ -135,10 +135,7 @@ function formatDuration(seconds: number): string {
   if (minutes < 60) return `${Math.round(minutes)}min`;
 
   const hours = minutes / 60;
-  if (hours < 24) return `${trimDecimal(hours)}h`;
-
-  const days = hours / 24;
-  return `${trimDecimal(days)}d`;
+  return `${trimDecimal(hours)}h`;
 }
 
 function trimDecimal(value: number): string {
