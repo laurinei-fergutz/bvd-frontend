@@ -1,7 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { discoverProcessGraph, type MapperUploadPreviewResponse, type ProcessGraphResponse } from '../services/api';
 import ProcessGraph from './ProcessGraph';
+import { downloadJson, downloadSvgAsImage, downloadTextFile, graphToMermaidText } from '../utils/exportUtils';
+
+const GRAPH_BACKGROUND = '#0b1220';
+
+const exportButtonStyle: React.CSSProperties = {
+  background: '#1f2937',
+  color: '#e5e7eb',
+  border: '1px solid #374151',
+  borderRadius: '6px',
+  padding: '0.4rem 0.9rem',
+  fontSize: '0.85rem',
+  cursor: 'pointer',
+};
 
 const selectStyle: React.CSSProperties = {
   width: '100%',
@@ -33,6 +46,8 @@ export default function ProcessExplorerModule({ mapperResult, onProcessedChange 
   const [graphData, setGraphData] = useState<ProcessGraphResponse | null>(null);
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphError, setGraphError] = useState('');
+  const [exportError, setExportError] = useState('');
+  const svgRef = useRef<SVGSVGElement>(null);
 
   // Re-derive the column picks whenever a new file comes in from DataMapper -
   // prefer the backend's suggestions, falling back to a local name-based guess.
@@ -45,6 +60,7 @@ export default function ProcessExplorerModule({ mapperResult, onProcessedChange 
     setTimestampCol(mapperResult.suggested_timestamp_col ?? guessColumn(columns, ['timestamp', 'time', 'data', 'date']));
     setGraphData(null);
     setGraphError('');
+    setExportError('');
   }, [mapperResult]);
 
   useEffect(() => {
@@ -62,6 +78,7 @@ export default function ProcessExplorerModule({ mapperResult, onProcessedChange 
 
     setGraphLoading(true);
     setGraphError('');
+    setExportError('');
 
     try {
       const result = await discoverProcessGraph(mapperResult.rows, caseIdCol, activityCol, timestampCol);
@@ -70,6 +87,18 @@ export default function ProcessExplorerModule({ mapperResult, onProcessedChange 
       setGraphError(err instanceof Error ? err.message : 'Erro ao gerar grafo do processo');
     } finally {
       setGraphLoading(false);
+    }
+  };
+
+  const handleExportImage = async (format: 'png' | 'jpeg') => {
+    if (!svgRef.current) return;
+
+    setExportError('');
+    try {
+      const extension = format === 'png' ? 'png' : 'jpg';
+      await downloadSvgAsImage(svgRef.current, format, `process-graph.${extension}`, GRAPH_BACKGROUND);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Erro ao exportar imagem do grafo');
     }
   };
 
@@ -183,8 +212,61 @@ export default function ProcessExplorerModule({ mapperResult, onProcessedChange 
       )}
 
       {graphData && (
-        <div style={{ marginTop: '1.5rem', overflowX: 'auto' }}>
-          <ProcessGraph graph={graphData} />
+        <div style={{ marginTop: '1.5rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+            <button type="button" style={exportButtonStyle} onClick={() => downloadJson(graphData, 'process-graph.json')}>
+              💾 Salvar JSON
+            </button>
+            <button type="button" style={exportButtonStyle} onClick={() => handleExportImage('png')}>
+              🖼️ Exportar PNG
+            </button>
+            <button type="button" style={exportButtonStyle} onClick={() => handleExportImage('jpeg')}>
+              🖼️ Exportar JPG
+            </button>
+          </div>
+
+          {exportError && (
+            <div
+              style={{
+                background: '#7f1d1d',
+                color: '#fecaca',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid #991b1b',
+              }}
+            >
+              ❌ {exportError}
+            </div>
+          )}
+
+          <div style={{ overflowX: 'auto' }}>
+            <ProcessGraph graph={graphData} svgRef={svgRef} />
+          </div>
+
+          <details style={{ marginTop: '1rem' }}>
+            <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>📝 Ver como texto estruturado (Mermaid)</summary>
+            <pre
+              style={{
+                background: '#111827',
+                padding: '1rem',
+                borderRadius: '4px',
+                marginTop: '0.5rem',
+                overflow: 'auto',
+                maxHeight: '400px',
+                fontSize: '0.75rem',
+              }}
+            >
+              {graphToMermaidText(graphData)}
+            </pre>
+            <button
+              type="button"
+              style={{ ...exportButtonStyle, marginTop: '0.5rem' }}
+              onClick={() => downloadTextFile(graphToMermaidText(graphData), 'process-graph.mmd')}
+            >
+              💾 Baixar .mmd
+            </button>
+          </details>
         </div>
       )}
     </div>

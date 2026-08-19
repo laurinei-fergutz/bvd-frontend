@@ -127,7 +127,7 @@ function edgeMidpoint(source: LayoutNode, target: LayoutNode): { x: number; y: n
   return { x, y };
 }
 
-function formatDuration(seconds: number): string {
+export function formatDuration(seconds: number): string {
   if (seconds < 1) return '<1s';
   if (seconds < 60) return `${Math.round(seconds)}s`;
 
@@ -142,7 +142,12 @@ function trimDecimal(value: number): string {
   return value.toFixed(1).replace(/\.0$/, '');
 }
 
-export default function ProcessGraph({ graph }: { graph: ProcessGraphResponse }) {
+type Props = {
+  graph: ProcessGraphResponse;
+  svgRef?: React.RefObject<SVGSVGElement>;
+};
+
+export default function ProcessGraph({ graph, svgRef }: Props) {
   if (graph.nodes.length === 0) return null;
 
   const { nodes, width, height } = layoutGraph(graph);
@@ -150,7 +155,13 @@ export default function ProcessGraph({ graph }: { graph: ProcessGraphResponse })
   const maxEdgeCount = Math.max(1, ...graph.edges.map((e) => e.count));
 
   return (
-    <svg width={width} height={height} style={{ background: '#0b1220', borderRadius: '8px', display: 'block' }}>
+    <svg
+      ref={svgRef}
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      style={{ background: '#0b1220', borderRadius: '8px', display: 'block', fontFamily: 'Arial, sans-serif' }}
+    >
       <defs>
         <marker id="process-graph-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
           <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />

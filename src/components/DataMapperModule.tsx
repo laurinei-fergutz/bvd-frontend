@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 
 import { uploadMapperFile, type MapperUploadPreviewResponse } from '../services/api';
+import { downloadJson } from '../utils/exportUtils';
 
 const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.log'];
 
@@ -198,8 +199,26 @@ export default function DataMapperModule({ result, onResult }: Props) {
             </table>
           </div>
 
-          <details>
-            <summary style={{ cursor: 'pointer', color: '#9ca3af', marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+            <button
+              type="button"
+              onClick={() => downloadJson(result, `${result.filename.replace(/\.[^.]+$/, '')}.json`)}
+              style={{
+                background: '#1f2937',
+                color: '#e5e7eb',
+                border: '1px solid #374151',
+                borderRadius: '6px',
+                padding: '0.4rem 0.9rem',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+              }}
+            >
+              💾 Salvar JSON
+            </button>
+          </div>
+
+          <details style={{ marginTop: '0.75rem' }}>
+            <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>
               📋 Ver resposta completa (JSON)
             </summary>
             <pre
