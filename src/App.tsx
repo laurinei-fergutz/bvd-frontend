@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { uploadMapperFile, discoverProcessGraph, type MapperUploadPreviewResponse, type ProcessGraphResponse } from './services/api';
 import ProcessGraph from './components/ProcessGraph';
 
-const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx'];
+const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.log'];
 
 const selectStyle: React.CSSProperties = {
   width: '100%',
@@ -44,7 +44,7 @@ export default function App() {
 
   const handleFileChange = async (file: File) => {
     if (!hasAcceptedExtension(file.name)) {
-      setError('Por favor, selecione um arquivo CSV ou Excel (.xlsx)');
+      setError('Por favor, selecione um arquivo CSV, Excel (.xlsx) ou log (.log)');
       return;
     }
 
@@ -58,10 +58,13 @@ export default function App() {
       const result = await uploadMapperFile(file);
       setResponse(result);
 
+      // Prefer the backend's suggestions (it inspects actual column types/
+      // values, e.g. which one is really a datetime) - fall back to a local
+      // name-based guess only for whichever field it couldn't determine.
       const columns = Object.keys(result.rows[0] ?? {});
-      setCaseIdCol(guessColumn(columns, ['case_id', 'caseid', 'case']));
-      setActivityCol(guessColumn(columns, ['activity', 'atividade', 'step', 'evento']));
-      setTimestampCol(guessColumn(columns, ['timestamp', 'time', 'data', 'date']));
+      setCaseIdCol(result.suggested_case_id_col ?? guessColumn(columns, ['case_id', 'caseid', 'case']));
+      setActivityCol(result.suggested_activity_col ?? guessColumn(columns, ['activity', 'atividade', 'step', 'evento']));
+      setTimestampCol(result.suggested_timestamp_col ?? guessColumn(columns, ['timestamp', 'time', 'data', 'date']));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao enviar arquivo');
     } finally {
@@ -143,13 +146,13 @@ export default function App() {
           }}
         >
           <p style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-            {loading ? '⏳ Processando arquivo...' : '📤 Arraste um arquivo CSV ou Excel (.xlsx) aqui'}
+            {loading ? '⏳ Processando arquivo...' : '📤 Arraste um arquivo CSV, Excel (.xlsx) ou log (.log) aqui'}
           </p>
           <p style={{ color: '#9ca3af' }}>ou clique para selecionar</p>
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv,.xlsx"
+            accept=".csv,.xlsx,.log"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) handleFileChange(file);
@@ -304,6 +307,9 @@ export default function App() {
             <div>
               <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>
                 Coluna de Case ID
+                {response.suggested_case_id_col === caseIdCol && caseIdCol && (
+                  <span style={{ color: '#10b981' }}> · sugerido</span>
+                )}
               </label>
               <select value={caseIdCol} onChange={(e) => setCaseIdCol(e.target.value)} style={selectStyle}>
                 {Object.keys(response.rows[0] || {}).map((col) => (
@@ -316,6 +322,9 @@ export default function App() {
             <div>
               <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>
                 Coluna de Atividade
+                {response.suggested_activity_col === activityCol && activityCol && (
+                  <span style={{ color: '#10b981' }}> · sugerido</span>
+                )}
               </label>
               <select value={activityCol} onChange={(e) => setActivityCol(e.target.value)} style={selectStyle}>
                 {Object.keys(response.rows[0] || {}).map((col) => (
@@ -328,6 +337,9 @@ export default function App() {
             <div>
               <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>
                 Coluna de Timestamp
+                {response.suggested_timestamp_col === timestampCol && timestampCol && (
+                  <span style={{ color: '#10b981' }}> · sugerido</span>
+                )}
               </label>
               <select value={timestampCol} onChange={(e) => setTimestampCol(e.target.value)} style={selectStyle}>
                 {Object.keys(response.rows[0] || {}).map((col) => (
@@ -386,8 +398,10 @@ export default function App() {
       <section style={{ marginTop: '3rem', padding: '1.5rem', background: '#111827', borderRadius: '8px', border: '1px solid #374151' }}>
         <h3>ℹ️ Sobre o DataMapper</h3>
         <ul style={{ color: '#d1d5db', lineHeight: '1.8' }}>
-          <li>✓ Upload de arquivos CSV ou Excel (.xlsx) com drag & drop</li>
+          <li>✓ Upload de arquivos CSV, Excel (.xlsx) ou log (.log) com drag & drop</li>
+          <li>✓ Interpretação de logs (JSON lines, logfmt ou texto livre) estruturados em JSON</li>
           <li>✓ Análise automática de tipos de dados (string, integer, float, datetime, boolean)</li>
+          <li>✓ Sugestão automática das colunas de ID, etapa e timestamp para o ProcessExplorer</li>
           <li>✓ Preview interativo dos dados</li>
           <li>✓ Schema inferido em tempo real</li>
         </ul>

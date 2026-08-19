@@ -19,6 +19,9 @@ export type MapperUploadPreviewResponse = {
   columns: MapperColumn[];
   sample_rows: Array<Record<string, string | number | boolean | null>>;
   rows: Array<Record<string, string | number | boolean | null>>;
+  suggested_case_id_col: string | null;
+  suggested_activity_col: string | null;
+  suggested_timestamp_col: string | null;
 };
 
 export async function fetchHealth() {
