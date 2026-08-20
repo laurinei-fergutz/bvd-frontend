@@ -11,6 +11,7 @@ import {
   type ProcessGraphResponse,
 } from '../services/api';
 import { computeCaseIdsByVariant, unionSelectedCaseIds } from '../utils/variantSelection';
+import { downloadAiConsultantPdf } from '../utils/pdfExport';
 import { useSettings } from '../context/SettingsContext';
 import {
   IconBot,
@@ -60,6 +61,7 @@ export default function AIConsultantModule({
   const [result, setResult] = useState<AnalyzeProcessResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pdfError, setPdfError] = useState('');
 
   const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
     low: t('ai.complexity.low'),
@@ -94,6 +96,7 @@ export default function AIConsultantModule({
   useEffect(() => {
     setResult(null);
     setError('');
+    setPdfError('');
   }, [graphData, checkedVariantIndices]);
 
   useEffect(() => {
@@ -142,6 +145,17 @@ export default function AIConsultantModule({
       setError(err instanceof Error ? err.message : t('ai.generateError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPdf = () => {
+    if (!graphData || !result) return;
+
+    setPdfError('');
+    try {
+      downloadAiConsultantPdf({ graph: graphData, checkedVariantIndices, result, language });
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : t('pdf.exportError'));
     }
   };
 
@@ -289,36 +303,58 @@ export default function AIConsultantModule({
         </p>
       )}
 
-      <button
-        type="button"
-        onClick={handleAnalyze}
-        disabled={loading || checkedVariantIndices.size === 0}
-        style={{
-          marginTop: '0.75rem',
-          background: loading || checkedVariantIndices.size === 0 ? 'var(--muted)' : 'var(--accent-purple)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '8px',
-          padding: '0.75rem 1.5rem',
-          fontSize: '1rem',
-          fontWeight: 'bold',
-          cursor: loading || checkedVariantIndices.size === 0 ? 'not-allowed' : 'pointer',
-          transition: 'background 0.2s ease',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-        }}
-      >
-        {loading ? (
-          <>
-            <IconSpinner size={16} /> {t('ai.analyzing')}
-          </>
-        ) : (
-          <>
-            <IconBot size={17} /> {t('ai.generateInsights')}
-          </>
-        )}
-      </button>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.75rem' }}>
+        <button
+          type="button"
+          onClick={handleAnalyze}
+          disabled={loading || checkedVariantIndices.size === 0}
+          style={{
+            background: loading || checkedVariantIndices.size === 0 ? 'var(--muted)' : 'var(--accent-purple)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.75rem 1.5rem',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            cursor: loading || checkedVariantIndices.size === 0 ? 'not-allowed' : 'pointer',
+            transition: 'background 0.2s ease',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          {loading ? (
+            <>
+              <IconSpinner size={16} /> {t('ai.analyzing')}
+            </>
+          ) : (
+            <>
+              <IconBot size={17} /> {t('ai.generateInsights')}
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleExportPdf}
+          disabled={!result}
+          title={result ? undefined : t('pdf.notReadyYet')}
+          style={{
+            background: 'var(--bg-surface-alt)',
+            color: result ? 'var(--text-primary)' : 'var(--muted)',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            padding: '0.75rem 1.25rem',
+            fontSize: '0.9rem',
+            cursor: result ? 'pointer' : 'not-allowed',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          <IconDocument size={16} /> {t('pdf.exportButton')}
+        </button>
+      </div>
       {loading && selectedEngine === 'ollama' && (
         <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>{t('ai.localModelHint')}</p>
       )}
@@ -341,9 +377,27 @@ export default function AIConsultantModule({
         </div>
       )}
 
+      {pdfError && (
+        <div
+          style={{
+            background: 'var(--danger-bg)',
+            color: 'var(--danger-text)',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginTop: '1rem',
+            border: '1px solid var(--danger-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          <IconXCircle size={18} /> {pdfError}
+        </div>
+      )}
+
       {result && (
         <div style={{ marginTop: '2rem' }}>
-          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem', margin: 0 }}>
             {t('ai.sessionGeneratedByPrefix')} <strong>{result.engine_used}</strong> {t('ai.sessionGeneratedByInfix')}{' '}
             {new Date(result.generated_at).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US')}
           </p>
