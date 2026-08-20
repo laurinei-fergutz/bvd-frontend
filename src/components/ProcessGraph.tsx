@@ -1,4 +1,5 @@
 import type { ProcessGraphEdge, ProcessGraphNode, ProcessGraphResponse } from '../services/api';
+import { useSettings, type ThemeMode } from '../context/SettingsContext';
 
 const NODE_WIDTH = 160;
 const NODE_HEIGHT = 56;
@@ -82,10 +83,53 @@ function layoutGraph(graph: ProcessGraphResponse): { nodes: LayoutNode[]; width:
   };
 }
 
-const NODE_COLORS: Record<ProcessGraphNode['type'], { fill: string; stroke: string }> = {
-  start: { fill: '#064e3b', stroke: '#10b981' },
-  end: { fill: '#7f1d1d', stroke: '#ef4444' },
-  activity: { fill: '#1f2937', stroke: '#3b82f6' },
+/**
+ * The exported PNG/JPG clones this <svg> standalone (no access to the host
+ * page's stylesheet), so its colors are resolved JS literals per theme
+ * rather than CSS custom properties - var() would silently fail to resolve
+ * once serialized outside the document.
+ */
+const PALETTES: Record<
+  ThemeMode,
+  {
+    background: string;
+    nodeText: string;
+    nodeSubtext: string;
+    nodeColors: Record<ProcessGraphNode['type'], { fill: string; stroke: string }>;
+    edgeDefault: string;
+    edgeBottleneck: string;
+    durationDefault: string;
+    durationBottleneck: string;
+  }
+> = {
+  dark: {
+    background: '#0b1220',
+    nodeText: '#e5e7eb',
+    nodeSubtext: '#9ca3af',
+    nodeColors: {
+      start: { fill: '#064e3b', stroke: '#10b981' },
+      end: { fill: '#7f1d1d', stroke: '#ef4444' },
+      activity: { fill: '#1f2937', stroke: '#3b82f6' },
+    },
+    edgeDefault: '#64748b',
+    edgeBottleneck: '#ef4444',
+    durationDefault: '#facc15',
+    durationBottleneck: '#f87171',
+  },
+  light: {
+    background: '#f8fafc',
+    nodeText: '#0f172a',
+    nodeSubtext: '#475569',
+    nodeColors: {
+      start: { fill: '#d1fae5', stroke: '#059669' },
+      end: { fill: '#fee2e2', stroke: '#dc2626' },
+      activity: { fill: '#e2e8f0', stroke: '#2563eb' },
+    },
+    edgeDefault: '#64748b',
+    edgeBottleneck: '#dc2626',
+    durationDefault: '#b45309',
+    durationBottleneck: '#dc2626',
+  },
 };
 
 function edgeControlPoints(source: LayoutNode, target: LayoutNode): [number, number][] {
@@ -148,8 +192,10 @@ type Props = {
 };
 
 export default function ProcessGraph({ graph, svgRef }: Props) {
+  const { theme, t } = useSettings();
   if (graph.nodes.length === 0) return null;
 
+  const palette = PALETTES[theme];
   const { nodes, width, height } = layoutGraph(graph);
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const maxEdgeCount = Math.max(1, ...graph.edges.map((e) => e.count));
@@ -160,14 +206,14 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}
-      style={{ background: '#0b1220', borderRadius: '8px', display: 'block', fontFamily: 'Arial, sans-serif' }}
+      style={{ background: palette.background, borderRadius: '8px', display: 'block', fontFamily: 'Arial, sans-serif' }}
     >
       <defs>
         <marker id="process-graph-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
+          <path d="M0,0 L0,6 L9,3 z" fill={palette.edgeDefault} />
         </marker>
         <marker id="process-graph-arrow-bottleneck" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
-          <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+          <path d="M0,0 L0,6 L9,3 z" fill={palette.edgeBottleneck} />
         </marker>
       </defs>
 
@@ -184,7 +230,7 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
             <path
               d={edgePath(source, target)}
               fill="none"
-              stroke={edge.bottleneck ? '#ef4444' : '#64748b'}
+              stroke={edge.bottleneck ? palette.edgeBottleneck : palette.edgeDefault}
               strokeWidth={edge.bottleneck ? strokeWidth + 1.5 : strokeWidth}
               opacity={edge.bottleneck ? 0.95 : 0.8}
               markerEnd={edge.bottleneck ? 'url(#process-graph-arrow-bottleneck)' : 'url(#process-graph-arrow)'}
@@ -194,8 +240,8 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
                 {edge.bottleneck && (
                   <path
                     d={`M ${mid.x - 22} ${mid.y - 3} l4 -7 l4 7 z`}
-                    fill="#f87171"
-                    stroke="#0b1220"
+                    fill={palette.durationBottleneck}
+                    stroke={palette.background}
                     strokeWidth={0.75}
                   />
                 )}
@@ -203,11 +249,11 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
                   x={mid.x}
                   y={mid.y}
                   textAnchor="middle"
-                  fill={edge.bottleneck ? '#f87171' : '#facc15'}
+                  fill={edge.bottleneck ? palette.durationBottleneck : palette.durationDefault}
                   fontSize={11}
                   fontWeight={700}
                   paintOrder="stroke"
-                  stroke="#0b1220"
+                  stroke={palette.background}
                   strokeWidth={4}
                 >
                   {formatDuration(edge.avg_duration_seconds)}
@@ -219,15 +265,15 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
       })}
 
       {nodes.map((node) => {
-        const colors = NODE_COLORS[node.type];
+        const colors = palette.nodeColors[node.type];
         return (
           <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
             <rect width={NODE_WIDTH} height={NODE_HEIGHT} rx={10} fill={colors.fill} stroke={colors.stroke} strokeWidth={1.5} />
-            <text x={NODE_WIDTH / 2} y={NODE_HEIGHT / 2 - 4} textAnchor="middle" fill="#e5e7eb" fontSize={13} fontWeight={600}>
+            <text x={NODE_WIDTH / 2} y={NODE_HEIGHT / 2 - 4} textAnchor="middle" fill={palette.nodeText} fontSize={13} fontWeight={600}>
               {node.label.length > 20 ? `${node.label.slice(0, 18)}…` : node.label}
             </text>
-            <text x={NODE_WIDTH / 2} y={NODE_HEIGHT / 2 + 14} textAnchor="middle" fill="#9ca3af" fontSize={11}>
-              {node.count} {node.count === 1 ? 'ocorrência' : 'ocorrências'}
+            <text x={NODE_WIDTH / 2} y={NODE_HEIGHT / 2 + 14} textAnchor="middle" fill={palette.nodeSubtext} fontSize={11}>
+              {node.count} {node.count === 1 ? t('graph.occurrence') : t('graph.occurrences')}
             </text>
           </g>
         );

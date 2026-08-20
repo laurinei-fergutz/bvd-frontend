@@ -11,6 +11,7 @@ import {
 import ProcessGraph, { formatDuration } from './ProcessGraph';
 import ProcessVariants from './ProcessVariants';
 import ZoomPanViewport from './ZoomPanViewport';
+import { useSettings } from '../context/SettingsContext';
 import {
   IconAlertTriangle,
   IconCode,
@@ -32,14 +33,13 @@ import {
   type EventLogFilters,
 } from '../utils/eventLogFilters';
 
-const GRAPH_BACKGROUND = '#0b1220';
 const NO_RESOURCE = '__none__';
 const NO_EXTRA_FILTER = '__none__';
 
 const exportButtonStyle: React.CSSProperties = {
-  background: '#1f2937',
-  color: '#e5e7eb',
-  border: '1px solid #374151',
+  background: 'var(--bg-surface-alt)',
+  color: 'var(--text-primary)',
+  border: '1px solid var(--border)',
   borderRadius: '6px',
   padding: '0.4rem 0.9rem',
   fontSize: '0.85rem',
@@ -50,13 +50,13 @@ const selectStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.5rem',
   borderRadius: '6px',
-  border: '1px solid #374151',
-  background: '#111827',
-  color: '#e5e7eb',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
 };
 
 const labelStyle: React.CSSProperties = {
-  color: '#9ca3af',
+  color: 'var(--text-secondary)',
   fontSize: '0.875rem',
   display: 'block',
   marginBottom: '0.25rem',
@@ -72,6 +72,7 @@ type Props = {
 };
 
 export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }: Props) {
+  const { t } = useSettings();
   const [caseIdCol, setCaseIdCol] = useState('');
   const [activityCol, setActivityCol] = useState('');
   const [timestampCol, setTimestampCol] = useState('');
@@ -149,7 +150,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
     if (!mapperResult) return;
 
     if (!caseIdCol || !activityCol || !timestampCol) {
-      setGraphError('Mapeie as três colunas obrigatórias (Case ID, Activity e Timestamp)');
+      setGraphError(t('processexplorer.missingColumns'));
       return;
     }
 
@@ -180,7 +181,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
     setFilteredRowCount(filteredRows.length);
 
     if (filteredRows.length === 0) {
-      setGraphError('Nenhuma linha restante depois de aplicar os filtros - ajuste os critérios');
+      setGraphError(t('processexplorer.noRowsAfterFilters'));
       setGraphData(null);
       return;
     }
@@ -210,7 +211,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
       // across every deviation.
       setCheckedVariants(graph.variants.length > 0 ? new Set([0]) : new Set());
     } catch (err) {
-      setGraphError(err instanceof Error ? err.message : 'Erro ao gerar grafo do processo');
+      setGraphError(err instanceof Error ? err.message : t('processexplorer.graphError'));
       setGraphData(null);
       setEventLogRows([]);
       setCheckedVariants(new Set());
@@ -225,9 +226,12 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
     setExportError('');
     try {
       const extension = format === 'png' ? 'png' : 'jpg';
-      await downloadSvgAsImage(svgRef.current, format, `process-graph.${extension}`, GRAPH_BACKGROUND);
+      // Canvas fillStyle can't resolve CSS custom properties, so read the
+      // current theme's shell color at export time instead of hardcoding one.
+      const background = getComputedStyle(document.documentElement).getPropertyValue('--bg-shell').trim() || '#0b1220';
+      await downloadSvgAsImage(svgRef.current, format, `process-graph.${extension}`, background);
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Erro ao exportar imagem do grafo');
+      setExportError(err instanceof Error ? err.message : t('processexplorer.exportError'));
     }
   };
 
@@ -235,16 +239,16 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
     return (
       <div>
         <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <IconWorkflow size={22} /> Module 1: ProcessExplorer
+          <IconWorkflow size={22} /> {t('processexplorer.title')}
         </h2>
         <div
           style={{
-            background: '#111827',
-            border: '1px dashed #374151',
+            background: 'var(--bg-surface)',
+            border: '1px dashed var(--border)',
             borderRadius: '8px',
             padding: '2rem',
             textAlign: 'center',
-            color: '#9ca3af',
+            color: 'var(--text-secondary)',
           }}
         >
           <p
@@ -257,11 +261,11 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
               gap: '0.4rem',
             }}
           >
-            <IconLock size={18} /> Módulo bloqueado
+            <IconLock size={18} /> {t('processexplorer.locked')}
           </p>
           <p>
-            Envie um arquivo no <strong>DataMapper</strong> primeiro para desbloquear o mapeamento de colunas e o
-            grafo do processo.
+            {t('processexplorer.lockedMessagePrefix')} <strong>DataMapper</strong>{' '}
+            {t('processexplorer.lockedMessageSuffix')}
           </p>
         </div>
       </div>
@@ -271,19 +275,16 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
   return (
     <div>
       <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <IconWorkflow size={22} /> Module 1: ProcessExplorer
+        <IconWorkflow size={22} /> {t('processexplorer.title')}
       </h2>
-      <p style={{ color: '#9ca3af' }}>
-        O Gêmeo Digital do seu processo: mapeie as colunas, filtre e gere o grafo (via pm4py) - mude a combinação e
-        gere de novo para comparar.
-      </p>
+      <p style={{ color: 'var(--text-secondary)' }}>{t('processexplorer.subtitle')}</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
         <div>
           <label style={labelStyle}>
-            Case ID <span style={{ color: '#f87171' }}>*</span>
+            {t('processexplorer.caseId')} <span style={{ color: 'var(--danger-light)' }}>*</span>
             {mapperResult.suggested_case_id_col === caseIdCol && caseIdCol && (
-              <span style={{ color: '#10b981' }}> · sugerido</span>
+              <span style={{ color: 'var(--accent-green)' }}> {t('processexplorer.suggested')}</span>
             )}
           </label>
           <select value={caseIdCol} onChange={(e) => setCaseIdCol(e.target.value)} style={selectStyle}>
@@ -296,9 +297,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
         </div>
         <div>
           <label style={labelStyle}>
-            Activity <span style={{ color: '#f87171' }}>*</span>
+            {t('processexplorer.activity')} <span style={{ color: 'var(--danger-light)' }}>*</span>
             {mapperResult.suggested_activity_col === activityCol && activityCol && (
-              <span style={{ color: '#10b981' }}> · sugerido</span>
+              <span style={{ color: 'var(--accent-green)' }}> {t('processexplorer.suggested')}</span>
             )}
           </label>
           <select value={activityCol} onChange={(e) => setActivityCol(e.target.value)} style={selectStyle}>
@@ -311,9 +312,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
         </div>
         <div>
           <label style={labelStyle}>
-            Timestamp <span style={{ color: '#f87171' }}>*</span>
+            {t('processexplorer.timestamp')} <span style={{ color: 'var(--danger-light)' }}>*</span>
             {mapperResult.suggested_timestamp_col === timestampCol && timestampCol && (
-              <span style={{ color: '#10b981' }}> · sugerido</span>
+              <span style={{ color: 'var(--accent-green)' }}> {t('processexplorer.suggested')}</span>
             )}
           </label>
           <select value={timestampCol} onChange={(e) => setTimestampCol(e.target.value)} style={selectStyle}>
@@ -326,9 +327,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
         </div>
         <div>
           <label style={labelStyle}>
-            Resource <span style={{ color: '#6b7280' }}>(opcional)</span>
+            {t('processexplorer.resource')} <span style={{ color: 'var(--text-tertiary)' }}>{t('processexplorer.optional')}</span>
             {mapperResult.suggested_resource_col === resourceCol && resourceCol !== NO_RESOURCE && (
-              <span style={{ color: '#10b981' }}> · sugerido</span>
+              <span style={{ color: 'var(--accent-green)' }}> {t('processexplorer.suggested')}</span>
             )}
           </label>
           <select
@@ -339,7 +340,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
             }}
             style={selectStyle}
           >
-            <option value={NO_RESOURCE}>Nenhuma</option>
+            <option value={NO_RESOURCE}>{t('processexplorer.none')}</option>
             {availableColumns.map((col) => (
               <option key={col} value={col}>
                 {col}
@@ -354,29 +355,29 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
         <summary
           style={{
             cursor: 'pointer',
-            color: '#9ca3af',
+            color: 'var(--text-secondary)',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             gap: '0.4rem',
           }}
         >
-          <IconFilter size={15} /> Filtros Dinâmicos
+          <IconFilter size={15} /> {t('processexplorer.dynamicFilters')}
         </summary>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
           <div>
-            <label style={labelStyle}>Período - de</label>
+            <label style={labelStyle}>{t('processexplorer.periodFrom')}</label>
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} style={selectStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Período - até</label>
+            <label style={labelStyle}>{t('processexplorer.periodTo')}</label>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} style={selectStyle} />
           </div>
 
           {resourceCol !== NO_RESOURCE && (
             <div>
-              <label style={labelStyle}>Resource / Região</label>
+              <label style={labelStyle}>{t('processexplorer.resourceRegion')}</label>
               <select
                 multiple
                 value={resourceFilterValues}
@@ -393,7 +394,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
           )}
 
           <div>
-            <label style={labelStyle}>Filtro adicional</label>
+            <label style={labelStyle}>{t('processexplorer.extraFilter')}</label>
             <select
               value={extraFilterColumn}
               onChange={(e) => {
@@ -404,7 +405,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
               }}
               style={selectStyle}
             >
-              <option value={NO_EXTRA_FILTER}>Nenhum</option>
+              <option value={NO_EXTRA_FILTER}>{t('processexplorer.noneFilter')}</option>
               {extraFilterCandidates.map((col) => (
                 <option key={col} value={col}>
                   {col}
@@ -419,7 +420,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
             {extraFilterIsNumeric ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '400px' }}>
                 <div>
-                  <label style={labelStyle}>{extraFilterColumn} - mínimo</label>
+                  <label style={labelStyle}>
+                    {extraFilterColumn} - {t('processexplorer.min')}
+                  </label>
                   <input
                     type="number"
                     value={extraFilterMin}
@@ -428,7 +431,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
                   />
                 </div>
                 <div>
-                  <label style={labelStyle}>{extraFilterColumn} - máximo</label>
+                  <label style={labelStyle}>
+                    {extraFilterColumn} - {t('processexplorer.max')}
+                  </label>
                   <input
                     type="number"
                     value={extraFilterMax}
@@ -439,7 +444,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
               </div>
             ) : (
               <div style={{ maxWidth: '300px' }}>
-                <label style={labelStyle}>Valores de {extraFilterColumn}</label>
+                <label style={labelStyle}>
+                  {t('processexplorer.valuesOf')} {extraFilterColumn}
+                </label>
                 <select
                   multiple
                   value={extraFilterSelected}
@@ -464,7 +471,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
         disabled={graphLoading}
         style={{
           marginTop: '1.5rem',
-          background: graphLoading ? '#4b5563' : '#7c3aed',
+          background: graphLoading ? 'var(--muted)' : 'var(--accent-purple)',
           color: 'white',
           border: 'none',
           borderRadius: '8px',
@@ -480,11 +487,11 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
       >
         {graphLoading ? (
           <>
-            <IconSpinner size={16} /> Filtrando, validando e gerando...
+            <IconSpinner size={16} /> {t('processexplorer.generating')}
           </>
         ) : (
           <>
-            <IconWorkflow size={17} /> Gerar Grafo do Processo
+            <IconWorkflow size={17} /> {t('processexplorer.generateGraph')}
           </>
         )}
       </button>
@@ -492,12 +499,12 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
       {graphError && (
         <div
           style={{
-            background: '#7f1d1d',
-            color: '#fecaca',
+            background: 'var(--danger-bg)',
+            color: 'var(--danger-text)',
             padding: '1rem',
             borderRadius: '8px',
             marginTop: '1rem',
-            border: '1px solid #991b1b',
+            border: '1px solid var(--danger-border)',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
@@ -508,37 +515,56 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
       )}
 
       {report && filteredRowCount !== null && (
-        <p style={{ color: '#9ca3af', fontSize: '0.85rem', marginTop: '1rem' }}>
-          Filtros: <strong style={{ color: '#e5e7eb' }}>{filteredRowCount}</strong> de{' '}
-          <strong style={{ color: '#e5e7eb' }}>{mapperResult.rows.length}</strong> linhas · Event Log:{' '}
-          <strong style={{ color: '#e5e7eb' }}>{report.total_rows_out}</strong> linhas,{' '}
-          <strong style={{ color: '#e5e7eb' }}>{report.total_cases}</strong> casos
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '1rem' }}>
+          {t('processexplorer.filtersSummaryPrefix')}{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{filteredRowCount}</strong> {t('processexplorer.of')}{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{mapperResult.rows.length}</strong>{' '}
+          {t('processexplorer.rowsWord')} · {t('processexplorer.eventLog')}{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{report.total_rows_out}</strong>{' '}
+          {t('processexplorer.rowsWord')},{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{report.total_cases}</strong> {t('processexplorer.cases')}
           {report.rows_dropped_missing_case_id > 0 && (
-            <> · {report.rows_dropped_missing_case_id} descartadas (Case ID vazio)</>
+            <>
+              {' '}
+              · {report.rows_dropped_missing_case_id} {t('processexplorer.droppedMissingCaseId')}
+            </>
           )}
           {report.rows_dropped_missing_timestamp > 0 && (
-            <> · {report.rows_dropped_missing_timestamp} descartadas (timestamp inválido)</>
+            <>
+              {' '}
+              · {report.rows_dropped_missing_timestamp} {t('processexplorer.droppedMissingTimestamp')}
+            </>
           )}
-          {report.timestamps_normalized > 0 && <> · {report.timestamps_normalized} timestamps normalizados</>}
-          {report.activities_trimmed > 0 && <> · {report.activities_trimmed} atividades com espaços removidos</>}
+          {report.timestamps_normalized > 0 && (
+            <>
+              {' '}
+              · {report.timestamps_normalized} {t('processexplorer.timestampsNormalized')}
+            </>
+          )}
+          {report.activities_trimmed > 0 && (
+            <>
+              {' '}
+              · {report.activities_trimmed} {t('processexplorer.activitiesTrimmed')}
+            </>
+          )}
         </p>
       )}
 
       {graphData && (
         <div style={{ marginTop: '1.5rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
-            <StatCard label="Casos" value={String(graphData.metrics.total_cases)} />
+            <StatCard label={t('processexplorer.casesStat')} value={String(graphData.metrics.total_cases)} />
             <StatCard
-              label="Lead Time médio"
+              label={t('processexplorer.avgLeadTime')}
               value={graphData.metrics.avg_lead_time_seconds != null ? formatDuration(graphData.metrics.avg_lead_time_seconds) : '—'}
-              hint="Duração total do caso"
+              hint={t('processexplorer.totalCaseDuration')}
             />
             <StatCard
-              label="Lead Time mínimo"
+              label={t('processexplorer.minLeadTime')}
               value={graphData.metrics.min_lead_time_seconds != null ? formatDuration(graphData.metrics.min_lead_time_seconds) : '—'}
             />
             <StatCard
-              label="Lead Time máximo"
+              label={t('processexplorer.maxLeadTime')}
               value={graphData.metrics.max_lead_time_seconds != null ? formatDuration(graphData.metrics.max_lead_time_seconds) : '—'}
             />
           </div>
@@ -549,33 +575,33 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
               style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
               onClick={() => downloadJson(graphData, 'process-graph.json')}
             >
-              <IconSave size={15} /> Salvar JSON
+              <IconSave size={15} /> {t('datamapper.saveJson')}
             </button>
             <button
               type="button"
               style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
               onClick={() => handleExportImage('png')}
             >
-              <IconImage size={15} /> Exportar PNG
+              <IconImage size={15} /> {t('processexplorer.exportPng')}
             </button>
             <button
               type="button"
               style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
               onClick={() => handleExportImage('jpeg')}
             >
-              <IconImage size={15} /> Exportar JPG
+              <IconImage size={15} /> {t('processexplorer.exportJpg')}
             </button>
           </div>
 
           {exportError && (
             <div
               style={{
-                background: '#7f1d1d',
-                color: '#fecaca',
+                background: 'var(--danger-bg)',
+                color: 'var(--danger-text)',
                 padding: '0.75rem 1rem',
                 borderRadius: '8px',
                 marginBottom: '1rem',
-                border: '1px solid #991b1b',
+                border: '1px solid var(--danger-border)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
@@ -591,13 +617,19 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
 
           <details style={{ marginTop: '1rem' }}>
             <summary
-              style={{ cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
             >
-              <IconCode size={15} /> Ver como texto estruturado (Mermaid)
+              <IconCode size={15} /> {t('processexplorer.viewAsMermaid')}
             </summary>
             <pre
               style={{
-                background: '#111827',
+                background: 'var(--bg-surface)',
                 padding: '1rem',
                 borderRadius: '4px',
                 marginTop: '0.5rem',
@@ -619,18 +651,18 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
               }}
               onClick={() => downloadTextFile(graphToMermaidText(graphData), 'process-graph.mmd')}
             >
-              <IconSave size={15} /> Baixar .mmd
+              <IconSave size={15} /> {t('processexplorer.downloadMmd')}
             </button>
           </details>
 
           {graphData.variants.length > 0 && (
             <div style={{ marginTop: '2rem' }}>
               <h3 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <IconLayers size={18} /> Variantes do Processo
+                <IconLayers size={18} /> {t('processexplorer.variants')}
               </h3>
-              <p style={{ color: '#9ca3af', marginTop: 0, fontSize: '0.85rem' }}>
-                Sequências de atividades agrupadas por frequência - a mais comum é o "caminho feliz". Marque as
-                variantes que o <strong>AI Consultant</strong> deve considerar na análise.
+              <p style={{ color: 'var(--text-secondary)', marginTop: 0, fontSize: '0.85rem' }}>
+                {t('processexplorer.variantsSubtitlePrefix')} <strong>AI Consultant</strong>{' '}
+                {t('processexplorer.variantsSubtitleSuffix')}
               </p>
               <ProcessVariants
                 variants={graphData.variants}
@@ -640,7 +672,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
               {checkedVariants.size === 0 && (
                 <p
                   style={{
-                    color: '#f87171',
+                    color: 'var(--danger-light)',
                     fontSize: '0.8rem',
                     marginTop: '0.5rem',
                     display: 'flex',
@@ -648,8 +680,7 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
                     gap: '0.4rem',
                   }}
                 >
-                  <IconAlertTriangle size={14} /> Nenhuma variante selecionada - marque ao menos uma para habilitar a
-                  análise de IA.
+                  <IconAlertTriangle size={14} /> {t('processexplorer.noVariantSelected')}
                 </p>
               )}
             </div>
@@ -662,10 +693,17 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
 
 function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div style={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px', padding: '0.85rem 1rem' }}>
-      <p style={{ color: '#9ca3af', margin: 0, fontSize: '0.8rem' }}>{label}</p>
+    <div
+      style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '8px',
+        padding: '0.85rem 1rem',
+      }}
+    >
+      <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.8rem' }}>{label}</p>
       <p style={{ fontWeight: 'bold', fontSize: '1.25rem', margin: '0.15rem 0 0' }}>{value}</p>
-      {hint && <p style={{ color: '#6b7280', margin: 0, fontSize: '0.7rem' }}>{hint}</p>}
+      {hint && <p style={{ color: 'var(--text-tertiary)', margin: 0, fontSize: '0.7rem' }}>{hint}</p>}
     </div>
   );
 }

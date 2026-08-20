@@ -1,3 +1,4 @@
+import { useSettings } from '../context/SettingsContext';
 import { IconDollarSign, IconSettings, IconSliders } from './Icons';
 
 export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'settings';
@@ -10,23 +11,18 @@ type ModuleStatus = {
   done?: boolean;
 };
 
-type ComingSoonModule = {
-  icon: React.ReactNode;
-  label: string;
-};
-
-const COMING_SOON: ComingSoonModule[] = [
-  { icon: <IconDollarSign size={16} />, label: 'ROI Studio' },
-  { icon: <IconSliders size={16} />, label: 'Command Center' },
-];
-
 type Props = {
   activeModule: ModuleId;
   onSelect: (module: ModuleId) => void;
   modules: ModuleStatus[];
 };
 
-function renderModuleButton(module: ModuleStatus, active: boolean, onSelect: (id: ModuleId) => void) {
+function renderModuleButton(
+  module: ModuleStatus,
+  active: boolean,
+  onSelect: (id: ModuleId) => void,
+  doneTitle: { done: string; notDone: string },
+) {
   return (
     <button
       type="button"
@@ -39,13 +35,13 @@ function renderModuleButton(module: ModuleStatus, active: boolean, onSelect: (id
         padding: '0.65rem 0.75rem',
         borderRadius: '8px',
         border: 'none',
-        background: active ? '#1e293b' : 'transparent',
-        color: active ? '#e5e7eb' : '#9ca3af',
+        background: active ? 'var(--bg-active)' : 'transparent',
+        color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
         fontSize: '0.9rem',
         fontWeight: active ? 700 : 500,
         cursor: 'pointer',
         textAlign: 'left',
-        borderLeft: active ? '3px solid #3b82f6' : '3px solid transparent',
+        borderLeft: active ? '3px solid var(--accent-blue)' : '3px solid transparent',
         transition: 'background 0.15s ease',
       }}
     >
@@ -53,13 +49,13 @@ function renderModuleButton(module: ModuleStatus, active: boolean, onSelect: (id
       <span style={{ flex: 1 }}>{module.label}</span>
       {module.done !== undefined && (
         <span
-          title={module.done ? 'Já processado' : 'Ainda não processado'}
+          title={module.done ? doneTitle.done : doneTitle.notDone}
           style={{
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            background: module.done ? '#10b981' : '#4b5563',
-            boxShadow: module.done ? '0 0 6px #10b98199' : 'none',
+            background: module.done ? 'var(--accent-green)' : 'var(--muted)',
+            boxShadow: module.done ? '0 0 6px var(--accent-green-glow)' : 'none',
             flexShrink: 0,
           }}
         />
@@ -69,15 +65,21 @@ function renderModuleButton(module: ModuleStatus, active: boolean, onSelect: (id
 }
 
 export default function Sidebar({ activeModule, onSelect, modules }: Props) {
-  const settingsModule: ModuleStatus = { id: 'settings', icon: <IconSettings size={16} />, label: 'Configurações' };
+  const { t } = useSettings();
+  const settingsModule: ModuleStatus = { id: 'settings', icon: <IconSettings size={16} />, label: t('sidebar.settings') };
+  const doneTitle = { done: t('sidebar.processed'), notDone: t('sidebar.notProcessed') };
+  const comingSoon = [
+    { icon: <IconDollarSign size={16} />, label: t('sidebar.roiStudio') },
+    { icon: <IconSliders size={16} />, label: t('sidebar.commandCenter') },
+  ];
 
   return (
     <nav
       style={{
         width: '260px',
         flexShrink: 0,
-        background: '#0b1220',
-        borderRight: '1px solid #1f2937',
+        background: 'var(--bg-shell)',
+        borderRight: '1px solid var(--border-subtle)',
         padding: '1.5rem 1rem',
         display: 'flex',
         flexDirection: 'column',
@@ -86,18 +88,18 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
       }}
     >
       <div>
-        <p style={sectionLabelStyle}>Módulos</p>
+        <p style={sectionLabelStyle}>{t('sidebar.modules')}</p>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {modules.map((module) => (
-            <li key={module.id}>{renderModuleButton(module, module.id === activeModule, onSelect)}</li>
+            <li key={module.id}>{renderModuleButton(module, module.id === activeModule, onSelect, doneTitle)}</li>
           ))}
         </ul>
       </div>
 
       <div>
-        <p style={sectionLabelStyle}>Em breve</p>
+        <p style={sectionLabelStyle}>{t('sidebar.comingSoon')}</p>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {COMING_SOON.map((module) => (
+          {comingSoon.map((module) => (
             <li key={module.label}>
               <div
                 style={{
@@ -106,7 +108,7 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
                   gap: '0.6rem',
                   padding: '0.65rem 0.75rem',
                   borderRadius: '8px',
-                  color: '#4b5563',
+                  color: 'var(--muted)',
                   fontSize: '0.9rem',
                   cursor: 'not-allowed',
                 }}
@@ -119,9 +121,9 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
         </ul>
       </div>
 
-      <div style={{ borderTop: '1px solid #1f2937', paddingTop: '1rem' }}>
+      <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          <li>{renderModuleButton(settingsModule, activeModule === 'settings', onSelect)}</li>
+          <li>{renderModuleButton(settingsModule, activeModule === 'settings', onSelect, doneTitle)}</li>
         </ul>
       </div>
     </nav>
@@ -133,6 +135,6 @@ const sectionLabelStyle: React.CSSProperties = {
   fontSize: '0.7rem',
   fontWeight: 700,
   letterSpacing: '0.1em',
-  color: '#6b7280',
+  color: 'var(--text-tertiary)',
   textTransform: 'uppercase',
 };

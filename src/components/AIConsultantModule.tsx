@@ -11,6 +11,7 @@ import {
   type ProcessGraphResponse,
 } from '../services/api';
 import { computeCaseIdsByVariant, unionSelectedCaseIds } from '../utils/variantSelection';
+import { useSettings } from '../context/SettingsContext';
 import {
   IconBot,
   IconBrain,
@@ -22,26 +23,14 @@ import {
   IconXCircle,
 } from './Icons';
 
-const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
-  low: 'Baixa complexidade',
-  medium: 'Média complexidade',
-  high: 'Alta complexidade',
-};
-
-const COMPLEXITY_COLOR: Record<AutomationInsight['complexity'], string> = {
-  low: '#10b981',
-  medium: '#f59e0b',
-  high: '#ef4444',
-};
-
 const textareaStyle: React.CSSProperties = {
   width: '100%',
   minHeight: '70px',
   padding: '0.6rem',
   borderRadius: '6px',
-  border: '1px solid #374151',
-  background: '#111827',
-  color: '#e5e7eb',
+  border: '1px solid var(--border)',
+  background: 'var(--bg-surface)',
+  color: 'var(--text-primary)',
   fontFamily: 'inherit',
   fontSize: '0.9rem',
   resize: 'vertical',
@@ -60,6 +49,7 @@ export default function AIConsultantModule({
   checkedVariantIndices,
   onProcessedChange,
 }: Props) {
+  const { t, language } = useSettings();
   const [engines, setEngines] = useState<LLMEngine[]>([]);
   const [systemPrompt, setSystemPrompt] = useState('');
   const [enginesLoading, setEnginesLoading] = useState(true);
@@ -70,6 +60,18 @@ export default function AIConsultantModule({
   const [result, setResult] = useState<AnalyzeProcessResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
+    low: t('ai.complexity.low'),
+    medium: t('ai.complexity.medium'),
+    high: t('ai.complexity.high'),
+  };
+
+  const COMPLEXITY_COLOR: Record<AutomationInsight['complexity'], string> = {
+    low: 'var(--accent-green)',
+    medium: 'var(--accent-amber)',
+    high: 'var(--danger)',
+  };
 
   useEffect(() => {
     fetchLLMEngines()
@@ -82,8 +84,9 @@ export default function AIConsultantModule({
           res.engines.find((e) => e.id === 'ollama' && e.configured) ?? res.engines.find((e) => e.configured);
         if (preferred) setSelectedEngine(preferred.id);
       })
-      .catch((err) => setEnginesError(err instanceof Error ? err.message : 'Erro ao carregar motores de IA'))
+      .catch((err) => setEnginesError(err instanceof Error ? err.message : t('ai.enginesError')))
       .finally(() => setEnginesLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // A newly generated graph (or a change in which variants are checked)
@@ -114,7 +117,7 @@ export default function AIConsultantModule({
     if (!graphData) return;
 
     if (checkedVariantIndices.size === 0) {
-      setError('Selecione ao menos uma variante do processo no ProcessExplorer antes de gerar os insights.');
+      setError(t('ai.selectVariant'));
       return;
     }
 
@@ -128,7 +131,7 @@ export default function AIConsultantModule({
         const selectedIds = unionSelectedCaseIds(caseIdsByVariant, checkedVariantIndices);
         const scopedRows = eventLogRows.filter((row) => selectedIds.has(String(row.case_id)));
         if (scopedRows.length === 0) {
-          throw new Error('Nenhum caso corresponde às variantes selecionadas - ajuste a seleção no ProcessExplorer.');
+          throw new Error(t('ai.noMatchingCases'));
         }
         graphToAnalyze = await discoverProcessGraph(scopedRows, 'case_id', 'activity', 'timestamp');
       }
@@ -136,7 +139,7 @@ export default function AIConsultantModule({
       const response = await analyzeProcess(graphToAnalyze, selectedEngine, extraPrompt || undefined);
       setResult(response);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao gerar insights');
+      setError(err instanceof Error ? err.message : t('ai.generateError'));
     } finally {
       setLoading(false);
     }
@@ -146,16 +149,16 @@ export default function AIConsultantModule({
     return (
       <div>
         <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <IconBot size={22} /> Module 2: AI Process Consultant
+          <IconBot size={22} /> {t('ai.title')}
         </h2>
         <div
           style={{
-            background: '#111827',
-            border: '1px dashed #374151',
+            background: 'var(--bg-surface)',
+            border: '1px dashed var(--border)',
             borderRadius: '8px',
             padding: '2rem',
             textAlign: 'center',
-            color: '#9ca3af',
+            color: 'var(--text-secondary)',
           }}
         >
           <p
@@ -168,11 +171,10 @@ export default function AIConsultantModule({
               gap: '0.4rem',
             }}
           >
-            <IconLock size={18} /> Módulo bloqueado
+            <IconLock size={18} /> {t('ai.locked')}
           </p>
           <p>
-            Gere um grafo no <strong>ProcessExplorer</strong> primeiro - o consultor de IA analisa as variantes,
-            gargalos e métricas de lá.
+            {t('ai.lockedMessagePrefix')} <strong>ProcessExplorer</strong> {t('ai.lockedMessageSuffix')}
           </p>
         </div>
       </div>
@@ -185,21 +187,18 @@ export default function AIConsultantModule({
   return (
     <div>
       <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <IconBot size={22} /> Module 2: AI Process Consultant
+        <IconBot size={22} /> {t('ai.title')}
       </h2>
-      <p style={{ color: '#9ca3af' }}>
-        O consultor virtual da plataforma: analisa o Gêmeo Digital do ProcessExplorer e recomenda onde aplicar RPA
-        e Agentes de IA.
-      </p>
+      <p style={{ color: 'var(--text-secondary)' }}>{t('ai.subtitle')}</p>
 
       <div style={{ marginTop: '1.5rem' }}>
-        <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>
-          Motor de IA
+        <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>
+          {t('ai.engine')}
         </label>
         {enginesLoading ? (
-          <p style={{ color: '#6b7280' }}>Carregando motores...</p>
+          <p style={{ color: 'var(--text-tertiary)' }}>{t('ai.loadingEngines')}</p>
         ) : enginesError ? (
-          <p style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <p style={{ color: 'var(--danger-light)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <IconXCircle size={15} /> {enginesError}
           </p>
         ) : (
@@ -212,11 +211,11 @@ export default function AIConsultantModule({
                   type="button"
                   disabled={!engine.configured}
                   onClick={() => setSelectedEngine(engine.id)}
-                  title={engine.configured ? undefined : 'Configure a API key correspondente para usar este motor'}
+                  title={engine.configured ? undefined : t('ai.configureApiKey')}
                   style={{
-                    background: active ? '#1e293b' : '#111827',
-                    color: engine.configured ? (active ? '#e5e7eb' : '#9ca3af') : '#4b5563',
-                    border: `1px solid ${active ? '#3b82f6' : '#374151'}`,
+                    background: active ? 'var(--bg-active)' : 'var(--bg-surface)',
+                    color: engine.configured ? (active ? 'var(--text-primary)' : 'var(--text-secondary)') : 'var(--muted)',
+                    border: `1px solid ${active ? 'var(--accent-blue)' : 'var(--border)'}`,
                     borderRadius: '8px',
                     padding: '0.6rem 1rem',
                     fontSize: '0.85rem',
@@ -225,8 +224,8 @@ export default function AIConsultantModule({
                   }}
                 >
                   <div style={{ fontWeight: 600 }}>{engine.label}</div>
-                  <div style={{ fontSize: '0.7rem', color: engine.configured ? '#10b981' : '#6b7280' }}>
-                    {engine.configured ? '● configurado' : '○ não configurado'}
+                  <div style={{ fontSize: '0.7rem', color: engine.configured ? 'var(--accent-green)' : 'var(--text-tertiary)' }}>
+                    {engine.configured ? t('ai.configured') : t('ai.notConfigured')}
                   </div>
                 </button>
               );
@@ -237,13 +236,13 @@ export default function AIConsultantModule({
 
       <details style={{ marginTop: '1.5rem' }}>
         <summary
-          style={{ cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
         >
-          <IconDocument size={15} /> Ver Prompt Consultivo do Sistema
+          <IconDocument size={15} /> {t('ai.viewSystemPrompt')}
         </summary>
         <pre
           style={{
-            background: '#111827',
+            background: 'var(--bg-surface)',
             padding: '1rem',
             borderRadius: '4px',
             marginTop: '0.5rem',
@@ -258,13 +257,13 @@ export default function AIConsultantModule({
       </details>
 
       <div style={{ marginTop: '1.5rem' }}>
-        <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>
-          Instruções adicionais para o consultor <span style={{ color: '#6b7280' }}>(opcional)</span>
+        <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>
+          {t('ai.extraInstructions')} <span style={{ color: 'var(--text-tertiary)' }}>{t('ai.optional')}</span>
         </label>
         <textarea
           value={extraPrompt}
           onChange={(e) => setExtraPrompt(e.target.value)}
-          placeholder="Ex: priorize recomendações de baixo custo de implementação"
+          placeholder={t('ai.extraPromptPlaceholder')}
           style={textareaStyle}
         />
       </div>
@@ -272,7 +271,7 @@ export default function AIConsultantModule({
       {totalVariants > 0 && (
         <p
           style={{
-            color: '#9ca3af',
+            color: 'var(--text-secondary)',
             fontSize: '0.8rem',
             marginTop: '1.5rem',
             marginBottom: 0,
@@ -281,10 +280,11 @@ export default function AIConsultantModule({
             gap: '0.4rem',
           }}
         >
-          <IconTarget size={14} /> Escopo da análise: <strong style={{ color: '#e5e7eb' }}>{checkedVariantIndices.size}</strong> de{' '}
-          <strong style={{ color: '#e5e7eb' }}>{totalVariants}</strong> variantes ·{' '}
-          <strong style={{ color: '#e5e7eb' }}>{checkedCaseCount}</strong> de{' '}
-          <strong style={{ color: '#e5e7eb' }}>{totalCases}</strong> casos selecionados no{' '}
+          <IconTarget size={14} /> {t('ai.scope')}{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{checkedVariantIndices.size}</strong> {t('ai.of')}{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{totalVariants}</strong> {t('ai.variants')} ·{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{checkedCaseCount}</strong> {t('ai.of')}{' '}
+          <strong style={{ color: 'var(--text-primary)' }}>{totalCases}</strong> {t('ai.casesSelectedIn')}{' '}
           <strong>ProcessExplorer</strong>
         </p>
       )}
@@ -295,7 +295,7 @@ export default function AIConsultantModule({
         disabled={loading || checkedVariantIndices.size === 0}
         style={{
           marginTop: '0.75rem',
-          background: loading || checkedVariantIndices.size === 0 ? '#4b5563' : '#7c3aed',
+          background: loading || checkedVariantIndices.size === 0 ? 'var(--muted)' : 'var(--accent-purple)',
           color: 'white',
           border: 'none',
           borderRadius: '8px',
@@ -311,29 +311,27 @@ export default function AIConsultantModule({
       >
         {loading ? (
           <>
-            <IconSpinner size={16} /> Analisando com IA...
+            <IconSpinner size={16} /> {t('ai.analyzing')}
           </>
         ) : (
           <>
-            <IconBot size={17} /> Gerar Insights com IA
+            <IconBot size={17} /> {t('ai.generateInsights')}
           </>
         )}
       </button>
       {loading && selectedEngine === 'ollama' && (
-        <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-          Modelo local rodando na CPU - pode levar alguns minutos, dependendo da carga da sua máquina.
-        </p>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>{t('ai.localModelHint')}</p>
       )}
 
       {error && (
         <div
           style={{
-            background: '#7f1d1d',
-            color: '#fecaca',
+            background: 'var(--danger-bg)',
+            color: 'var(--danger-text)',
             padding: '1rem',
             borderRadius: '8px',
             marginTop: '1rem',
-            border: '1px solid #991b1b',
+            border: '1px solid var(--danger-border)',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
@@ -345,29 +343,35 @@ export default function AIConsultantModule({
 
       {result && (
         <div style={{ marginTop: '2rem' }}>
-          <p style={{ color: '#6b7280', fontSize: '0.8rem' }}>
-            Sessão de Insights gerada por <strong>{result.engine_used}</strong> em{' '}
-            {new Date(result.generated_at).toLocaleString('pt-BR')}
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>
+            {t('ai.sessionGeneratedByPrefix')} <strong>{result.engine_used}</strong> {t('ai.sessionGeneratedByInfix')}{' '}
+            {new Date(result.generated_at).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US')}
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
             <InsightColumn
               title={
                 <>
-                  <IconBot size={16} /> Automação RPA
+                  <IconBot size={16} /> {t('ai.rpaAutomation')}
                 </>
               }
-              accent="#3b82f6"
+              accent="var(--accent-blue)"
               insights={rpaInsights}
+              noRecommendations={t('ai.noRecommendations')}
+              complexityLabel={COMPLEXITY_LABEL}
+              complexityColor={COMPLEXITY_COLOR}
             />
             <InsightColumn
               title={
                 <>
-                  <IconBrain size={16} /> Agentes de IA
+                  <IconBrain size={16} /> {t('ai.aiAgents')}
                 </>
               }
-              accent="#a855f7"
+              accent="var(--accent-purple-light)"
               insights={aiAgentInsights}
+              noRecommendations={t('ai.noRecommendations')}
+              complexityLabel={COMPLEXITY_LABEL}
+              complexityColor={COMPLEXITY_COLOR}
             />
           </div>
         </div>
@@ -380,10 +384,16 @@ function InsightColumn({
   title,
   accent,
   insights,
+  noRecommendations,
+  complexityLabel,
+  complexityColor,
 }: {
   title: React.ReactNode;
   accent: string;
   insights: AutomationInsight[];
+  noRecommendations: string;
+  complexityLabel: Record<AutomationInsight['complexity'], string>;
+  complexityColor: Record<AutomationInsight['complexity'], string>;
 }) {
   return (
     <div>
@@ -399,11 +409,17 @@ function InsightColumn({
         {title}
       </h3>
       {insights.length === 0 ? (
-        <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Nenhuma recomendação nesta categoria.</p>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>{noRecommendations}</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {insights.map((insight, idx) => (
-            <InsightCard key={idx} insight={insight} accent={accent} />
+            <InsightCard
+              key={idx}
+              insight={insight}
+              accent={accent}
+              complexityLabel={complexityLabel}
+              complexityColor={complexityColor}
+            />
           ))}
         </div>
       )}
@@ -411,31 +427,41 @@ function InsightColumn({
   );
 }
 
-function InsightCard({ insight, accent }: { insight: AutomationInsight; accent: string }) {
+function InsightCard({
+  insight,
+  accent,
+  complexityLabel,
+  complexityColor,
+}: {
+  insight: AutomationInsight;
+  accent: string;
+  complexityLabel: Record<AutomationInsight['complexity'], string>;
+  complexityColor: Record<AutomationInsight['complexity'], string>;
+}) {
   return (
-    <div style={{ background: '#111827', border: `1px solid ${accent}55`, borderRadius: '8px', padding: '1rem' }}>
+    <div style={{ background: 'var(--bg-surface)', border: `1px solid ${accent}55`, borderRadius: '8px', padding: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-        <h4 style={{ margin: 0, color: '#e5e7eb' }}>{insight.title}</h4>
+        <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>{insight.title}</h4>
         <span
           style={{
             fontSize: '0.7rem',
             fontWeight: 700,
-            color: COMPLEXITY_COLOR[insight.complexity],
-            border: `1px solid ${COMPLEXITY_COLOR[insight.complexity]}`,
+            color: complexityColor[insight.complexity],
+            border: `1px solid ${complexityColor[insight.complexity]}`,
             borderRadius: '999px',
             padding: '0.1rem 0.55rem',
             whiteSpace: 'nowrap',
           }}
         >
-          {COMPLEXITY_LABEL[insight.complexity]}
+          {complexityLabel[insight.complexity]}
         </span>
       </div>
 
-      <p style={{ color: '#d1d5db', fontSize: '0.85rem', marginTop: '0.5rem' }}>{insight.description}</p>
+      <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginTop: '0.5rem' }}>{insight.description}</p>
 
       <p
         style={{
-          color: '#10b981',
+          color: 'var(--accent-green)',
           fontSize: '0.85rem',
           fontWeight: 600,
           marginTop: '0.5rem',
@@ -447,7 +473,7 @@ function InsightCard({ insight, accent }: { insight: AutomationInsight; accent: 
         <IconTrendingUp size={14} /> {insight.estimated_efficiency_gain}
       </p>
 
-      <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
         {insight.business_justification}
       </p>
 
@@ -457,12 +483,12 @@ function InsightCard({ insight, accent }: { insight: AutomationInsight; accent: 
             <span
               key={activity}
               style={{
-                background: '#1f2937',
-                border: '1px solid #374151',
+                background: 'var(--bg-surface-alt)',
+                border: '1px solid var(--border)',
                 borderRadius: '999px',
                 padding: '0.15rem 0.6rem',
                 fontSize: '0.72rem',
-                color: '#9ca3af',
+                color: 'var(--text-secondary)',
               }}
             >
               {activity}

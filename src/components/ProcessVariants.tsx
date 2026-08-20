@@ -1,4 +1,5 @@
 import type { ProcessVariant } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
 import { IconTrophy } from './Icons';
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 };
 
 export default function ProcessVariants({ variants, checkedIndices, onToggle }: Props) {
+  const { t } = useSettings();
   if (variants.length === 0) return null;
 
   return (
@@ -18,8 +20,8 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
           <div
             key={idx}
             style={{
-              background: '#111827',
-              border: `1px solid ${idx === 0 ? '#10b981' : '#374151'}`,
+              background: 'var(--bg-surface)',
+              border: `1px solid ${idx === 0 ? 'var(--accent-green)' : 'var(--border)'}`,
               borderRadius: '8px',
               padding: '0.85rem 1rem',
               opacity: checked ? 1 : 0.6,
@@ -37,7 +39,7 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
                   style={{
                     fontSize: '0.8rem',
                     fontWeight: 700,
-                    color: idx === 0 ? '#10b981' : '#9ca3af',
+                    color: idx === 0 ? 'var(--accent-green)' : 'var(--text-secondary)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.35rem',
@@ -45,15 +47,16 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
                 >
                   {idx === 0 ? (
                     <>
-                      <IconTrophy size={14} /> Caminho Feliz
+                      <IconTrophy size={14} /> {t('variants.happyPath')}
                     </>
                   ) : (
-                    `Variante ${idx + 1}`
+                    `${t('variants.variant')} ${idx + 1}`
                   )}
                 </span>
               </label>
-              <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>
-                {variant.case_count} {variant.case_count === 1 ? 'caso' : 'casos'} · {variant.percentage.toFixed(1)}%
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                {variant.case_count} {variant.case_count === 1 ? t('variants.case') : t('variants.casesPlural')} ·{' '}
+                {variant.percentage.toFixed(1)}%
               </span>
             </div>
 
@@ -61,7 +64,7 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
               style={{
                 height: '6px',
                 borderRadius: '3px',
-                background: '#1f2937',
+                background: 'var(--bg-surface-alt)',
                 marginBottom: '0.6rem',
                 overflow: 'hidden',
               }}
@@ -70,7 +73,7 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
                 style={{
                   height: '100%',
                   width: `${variant.percentage}%`,
-                  background: idx === 0 ? '#10b981' : '#3b82f6',
+                  background: idx === 0 ? 'var(--accent-green)' : 'var(--accent-blue)',
                 }}
               />
             </div>
@@ -80,16 +83,18 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
                 <span key={stepIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                   <span
                     style={{
-                      background: '#1f2937',
-                      border: '1px solid #374151',
+                      background: 'var(--bg-surface-alt)',
+                      border: '1px solid var(--border)',
                       borderRadius: '999px',
                       padding: '0.2rem 0.65rem',
-                      color: '#e5e7eb',
+                      color: 'var(--text-primary)',
                     }}
                   >
                     {step}
                   </span>
-                  {stepIdx < variant.sequence.length - 1 && <span style={{ color: '#6b7280' }}>→</span>}
+                  {stepIdx < variant.sequence.length - 1 && (
+                    <span style={{ color: 'var(--text-tertiary)' }}>→</span>
+                  )}
                 </span>
               ))}
             </div>

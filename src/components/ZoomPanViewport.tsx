@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 
+import { useSettings } from '../context/SettingsContext';
 import { IconRotateCcw, IconZoomIn, IconZoomOut } from './Icons';
 
 const MIN_SCALE = 0.3;
@@ -10,9 +11,9 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 const controlButtonStyle: React.CSSProperties = {
-  background: '#1f2937',
-  color: '#e5e7eb',
-  border: '1px solid #374151',
+  background: 'var(--bg-surface-alt)',
+  color: 'var(--text-primary)',
+  border: '1px solid var(--border)',
   borderRadius: '6px',
   padding: '0.35rem 0.6rem',
   fontSize: '0.85rem',
@@ -35,6 +36,7 @@ type Props = {
  * zoom/pan state.
  */
 export default function ZoomPanViewport({ children, height = 560 }: Props) {
+  const { t } = useSettings();
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 16, y: 16 });
   const [isDragging, setIsDragging] = useState(false);
@@ -73,25 +75,25 @@ export default function ZoomPanViewport({ children, height = 560 }: Props) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1.2)} title="Aumentar zoom">
+        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1.2)} title={t('zoom.in')}>
           <IconZoomIn size={15} />
         </button>
-        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1 / 1.2)} title="Diminuir zoom">
+        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1 / 1.2)} title={t('zoom.out')}>
           <IconZoomOut size={15} />
         </button>
         <button type="button" style={controlButtonStyle} onClick={reset}>
-          <IconRotateCcw size={15} /> Resetar
+          <IconRotateCcw size={15} /> {t('zoom.reset')}
         </button>
-        <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>Arraste para mover · scroll para zoom</span>
+        <span style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem' }}>{t('zoom.hint')}</span>
       </div>
 
       <div
         style={{
           height,
           overflow: 'hidden',
-          border: '1px solid #374151',
+          border: '1px solid var(--border)',
           borderRadius: '8px',
-          background: '#0b1220',
+          background: 'var(--bg-shell)',
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
         onWheel={handleWheel}
