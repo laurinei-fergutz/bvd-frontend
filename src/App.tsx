@@ -6,7 +6,9 @@ import Sidebar, { type ModuleId } from './components/Sidebar';
 import DataMapperModule from './components/DataMapperModule';
 import ProcessExplorerModule from './components/ProcessExplorerModule';
 import AIConsultantModule from './components/AIConsultantModule';
+import SettingsModule from './components/SettingsModule';
 import { IconBot, IconFolder, IconWorkflow } from './components/Icons';
+import { SettingsProvider } from './context/SettingsContext';
 
 export default function App() {
   const [activeModule, setActiveModule] = useState<ModuleId>('datamapper');
@@ -27,44 +29,49 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', color: '#e5e7eb', fontFamily: 'sans-serif' }}>
-      <TopBar />
+    <SettingsProvider>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', color: '#e5e7eb', fontFamily: 'sans-serif' }}>
+        <TopBar />
 
-      <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        <Sidebar
-          activeModule={activeModule}
-          onSelect={setActiveModule}
-          modules={[
-            { id: 'datamapper', icon: <IconFolder size={16} />, label: 'DataMapper', done: mapperResult !== null },
-            {
-              id: 'processexplorer',
-              icon: <IconWorkflow size={16} />,
-              label: 'ProcessExplorer',
-              done: graphData !== null,
-            },
-            { id: 'aiconsultant', icon: <IconBot size={16} />, label: 'AI Consultant', done: aiConsultantDone },
-          ]}
-        />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          <Sidebar
+            activeModule={activeModule}
+            onSelect={setActiveModule}
+            modules={[
+              { id: 'datamapper', icon: <IconFolder size={16} />, label: 'DataMapper', done: mapperResult !== null },
+              {
+                id: 'processexplorer',
+                icon: <IconWorkflow size={16} />,
+                label: 'ProcessExplorer',
+                done: graphData !== null,
+              },
+              { id: 'aiconsultant', icon: <IconBot size={16} />, label: 'AI Consultant', done: aiConsultantDone },
+            ]}
+          />
 
-        <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
-          {/* All modules stay mounted so state (upload, mapping, graph, insights)
-              survives switching tabs - only visibility toggles. */}
-          <div style={{ display: activeModule === 'datamapper' ? 'block' : 'none' }}>
-            <DataMapperModule result={mapperResult} onResult={setMapperResult} />
-          </div>
-          <div style={{ display: activeModule === 'processexplorer' ? 'block' : 'none' }}>
-            <ProcessExplorerModule mapperResult={mapperResult} onGraphGenerated={handleGraphGenerated} />
-          </div>
-          <div style={{ display: activeModule === 'aiconsultant' ? 'block' : 'none' }}>
-            <AIConsultantModule
-              graphData={graphData}
-              eventLogRows={eventLogRows}
-              checkedVariantIndices={checkedVariantIndices}
-              onProcessedChange={setAiConsultantDone}
-            />
-          </div>
-        </main>
+          <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+            {/* All modules stay mounted so state (upload, mapping, graph, insights)
+                survives switching tabs - only visibility toggles. */}
+            <div style={{ display: activeModule === 'datamapper' ? 'block' : 'none' }}>
+              <DataMapperModule result={mapperResult} onResult={setMapperResult} />
+            </div>
+            <div style={{ display: activeModule === 'processexplorer' ? 'block' : 'none' }}>
+              <ProcessExplorerModule mapperResult={mapperResult} onGraphGenerated={handleGraphGenerated} />
+            </div>
+            <div style={{ display: activeModule === 'aiconsultant' ? 'block' : 'none' }}>
+              <AIConsultantModule
+                graphData={graphData}
+                eventLogRows={eventLogRows}
+                checkedVariantIndices={checkedVariantIndices}
+                onProcessedChange={setAiConsultantDone}
+              />
+            </div>
+            <div style={{ display: activeModule === 'settings' ? 'block' : 'none' }}>
+              <SettingsModule />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </SettingsProvider>
   );
 }

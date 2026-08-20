@@ -1,12 +1,13 @@
-import { IconDollarSign, IconSliders } from './Icons';
+import { IconDollarSign, IconSettings, IconSliders } from './Icons';
 
-export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant';
+export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'settings';
 
 type ModuleStatus = {
   id: ModuleId;
   icon: React.ReactNode;
   label: string;
-  done: boolean;
+  /** Omit for utility entries (e.g. Settings) that have no "processed" state. */
+  done?: boolean;
 };
 
 type ComingSoonModule = {
@@ -25,7 +26,51 @@ type Props = {
   modules: ModuleStatus[];
 };
 
+function renderModuleButton(module: ModuleStatus, active: boolean, onSelect: (id: ModuleId) => void) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(module.id)}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.6rem',
+        padding: '0.65rem 0.75rem',
+        borderRadius: '8px',
+        border: 'none',
+        background: active ? '#1e293b' : 'transparent',
+        color: active ? '#e5e7eb' : '#9ca3af',
+        fontSize: '0.9rem',
+        fontWeight: active ? 700 : 500,
+        cursor: 'pointer',
+        textAlign: 'left',
+        borderLeft: active ? '3px solid #3b82f6' : '3px solid transparent',
+        transition: 'background 0.15s ease',
+      }}
+    >
+      <span>{module.icon}</span>
+      <span style={{ flex: 1 }}>{module.label}</span>
+      {module.done !== undefined && (
+        <span
+          title={module.done ? 'Já processado' : 'Ainda não processado'}
+          style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: module.done ? '#10b981' : '#4b5563',
+            boxShadow: module.done ? '0 0 6px #10b98199' : 'none',
+            flexShrink: 0,
+          }}
+        />
+      )}
+    </button>
+  );
+}
+
 export default function Sidebar({ activeModule, onSelect, modules }: Props) {
+  const settingsModule: ModuleStatus = { id: 'settings', icon: <IconSettings size={16} />, label: 'Configurações' };
+
   return (
     <nav
       style={{
@@ -37,53 +82,15 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
         display: 'flex',
         flexDirection: 'column',
         gap: '1.5rem',
+        overflowY: 'auto',
       }}
     >
       <div>
         <p style={sectionLabelStyle}>Módulos</p>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {modules.map((module) => {
-            const active = module.id === activeModule;
-            return (
-              <li key={module.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(module.id)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    padding: '0.65rem 0.75rem',
-                    borderRadius: '8px',
-                    border: 'none',
-                    background: active ? '#1e293b' : 'transparent',
-                    color: active ? '#e5e7eb' : '#9ca3af',
-                    fontSize: '0.9rem',
-                    fontWeight: active ? 700 : 500,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    borderLeft: active ? '3px solid #3b82f6' : '3px solid transparent',
-                    transition: 'background 0.15s ease',
-                  }}
-                >
-                  <span>{module.icon}</span>
-                  <span style={{ flex: 1 }}>{module.label}</span>
-                  <span
-                    title={module.done ? 'Já processado' : 'Ainda não processado'}
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: module.done ? '#10b981' : '#4b5563',
-                      boxShadow: module.done ? '0 0 6px #10b98199' : 'none',
-                      flexShrink: 0,
-                    }}
-                  />
-                </button>
-              </li>
-            );
-          })}
+          {modules.map((module) => (
+            <li key={module.id}>{renderModuleButton(module, module.id === activeModule, onSelect)}</li>
+          ))}
         </ul>
       </div>
 
@@ -109,6 +116,12 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
               </div>
             </li>
           ))}
+        </ul>
+      </div>
+
+      <div style={{ borderTop: '1px solid #1f2937', paddingTop: '1rem' }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          <li>{renderModuleButton(settingsModule, activeModule === 'settings', onSelect)}</li>
         </ul>
       </div>
     </nav>
