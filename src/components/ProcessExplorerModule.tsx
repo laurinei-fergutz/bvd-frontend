@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   discoverProcessGraph,
   validateEventLog,
+  type EventLogRow,
   type MapperUploadPreviewResponse,
   type ProcessGraphResponse,
   type SanitizationReport,
@@ -51,7 +52,11 @@ const labelStyle: React.CSSProperties = {
 
 type Props = {
   mapperResult: MapperUploadPreviewResponse | null;
-  onGraphGenerated: (graph: ProcessGraphResponse | null) => void;
+  onGraphGenerated: (
+    graph: ProcessGraphResponse | null,
+    eventLogRows: EventLogRow[],
+    checkedVariantIndices: Set<number>,
+  ) => void;
 };
 
 export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }: Props) {
@@ -71,6 +76,8 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
   const [report, setReport] = useState<SanitizationReport | null>(null);
   const [filteredRowCount, setFilteredRowCount] = useState<number | null>(null);
   const [graphData, setGraphData] = useState<ProcessGraphResponse | null>(null);
+  const [eventLogRows, setEventLogRows] = useState<EventLogRow[]>([]);
+  const [checkedVariants, setCheckedVariants] = useState<Set<number>>(new Set());
   const [graphLoading, setGraphLoading] = useState(false);
   const [graphError, setGraphError] = useState('');
   const [exportError, setExportError] = useState('');
@@ -97,14 +104,25 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
     setReport(null);
     setFilteredRowCount(null);
     setGraphData(null);
+    setEventLogRows([]);
+    setCheckedVariants(new Set());
     setGraphError('');
     setExportError('');
   }, [mapperResult]);
 
   useEffect(() => {
-    onGraphGenerated(graphData);
+    onGraphGenerated(graphData, eventLogRows, checkedVariants);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graphData]);
+  }, [graphData, eventLogRows, checkedVariants]);
+
+  const handleToggleVariant = (index: number) => {
+    setCheckedVariants((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const availableColumns = Object.keys(mapperResult?.rows[0] ?? {});
   const extraFilterCandidates = availableColumns.filter(
@@ -174,9 +192,16 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
 
       const graph = await discoverProcessGraph(validated.rows, 'case_id', 'activity', 'timestamp');
       setGraphData(graph);
+      setEventLogRows(validated.rows);
+      // Variants are ranked by frequency - default to only the "happy path"
+      // (highest occurrence) so the AI Consultant starts focused, not diluted
+      // across every deviation.
+      setCheckedVariants(graph.variants.length > 0 ? new Set([0]) : new Set());
     } catch (err) {
       setGraphError(err instanceof Error ? err.message : 'Erro ao gerar grafo do processo');
       setGraphData(null);
+      setEventLogRows([]);
+      setCheckedVariants(new Set());
     } finally {
       setGraphLoading(false);
     }
@@ -525,9 +550,19 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
             <div style={{ marginTop: '2rem' }}>
               <h3 style={{ marginBottom: '0.25rem' }}>🧬 Variantes do Processo</h3>
               <p style={{ color: '#9ca3af', marginTop: 0, fontSize: '0.85rem' }}>
-                Sequências de atividades agrupadas por frequência - a mais comum é o "caminho feliz".
+                Sequências de atividades agrupadas por frequência - a mais comum é o "caminho feliz". Marque as
+                variantes que o <strong>AI Consultant</strong> deve considerar na análise.
               </p>
-              <ProcessVariants variants={graphData.variants} />
+              <ProcessVariants
+                variants={graphData.variants}
+                checkedIndices={checkedVariants}
+                onToggle={handleToggleVariant}
+              />
+              {checkedVariants.size === 0 && (
+                <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  ⚠️ Nenhuma variante selecionada - marque ao menos uma para habilitar a análise de IA.
+                </p>
+              )}
             </div>
           )}
         </div>

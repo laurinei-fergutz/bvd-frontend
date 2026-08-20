@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   analyzeProcess,
+  discoverProcessGraph,
   fetchLLMEngines,
   type AnalyzeProcessResponse,
   type AutomationInsight,
+  type EventLogRow,
   type LLMEngine,
   type ProcessGraphResponse,
 } from '../services/api';
+import { computeCaseIdsByVariant, unionSelectedCaseIds } from '../utils/variantSelection';
 
 const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
   low: 'Baixa complexidade',
@@ -36,15 +39,22 @@ const textareaStyle: React.CSSProperties = {
 
 type Props = {
   graphData: ProcessGraphResponse | null;
+  eventLogRows: EventLogRow[];
+  checkedVariantIndices: Set<number>;
   onProcessedChange: (done: boolean) => void;
 };
 
-export default function AIConsultantModule({ graphData, onProcessedChange }: Props) {
+export default function AIConsultantModule({
+  graphData,
+  eventLogRows,
+  checkedVariantIndices,
+  onProcessedChange,
+}: Props) {
   const [engines, setEngines] = useState<LLMEngine[]>([]);
   const [systemPrompt, setSystemPrompt] = useState('');
   const [enginesLoading, setEnginesLoading] = useState(true);
   const [enginesError, setEnginesError] = useState('');
-  const [selectedEngine, setSelectedEngine] = useState('mock');
+  const [selectedEngine, setSelectedEngine] = useState('ollama');
   const [extraPrompt, setExtraPrompt] = useState('');
 
   const [result, setResult] = useState<AnalyzeProcessResponse | null>(null);
@@ -56,32 +66,64 @@ export default function AIConsultantModule({ graphData, onProcessedChange }: Pro
       .then((res) => {
         setEngines(res.engines);
         setSystemPrompt(res.default_system_prompt);
-        const preferred = res.engines.find((e) => e.configured && e.id !== 'mock') ?? res.engines.find((e) => e.id === 'mock');
+        // Prefer Ollama (free, local, no key needed) when it's ready to go,
+        // then fall back to any other configured engine.
+        const preferred =
+          res.engines.find((e) => e.id === 'ollama' && e.configured) ?? res.engines.find((e) => e.configured);
         if (preferred) setSelectedEngine(preferred.id);
       })
       .catch((err) => setEnginesError(err instanceof Error ? err.message : 'Erro ao carregar motores de IA'))
       .finally(() => setEnginesLoading(false));
   }, []);
 
-  // A newly generated graph invalidates whatever insights were derived from the previous one.
+  // A newly generated graph (or a change in which variants are checked)
+  // invalidates whatever insights were derived from the previous scope.
   useEffect(() => {
     setResult(null);
     setError('');
-  }, [graphData]);
+  }, [graphData, checkedVariantIndices]);
 
   useEffect(() => {
     onProcessedChange(result !== null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 
+  const caseIdsByVariant = useMemo(
+    () => (graphData ? computeCaseIdsByVariant(eventLogRows, graphData.variants) : []),
+    [eventLogRows, graphData],
+  );
+
+  const totalVariants = graphData?.variants.length ?? 0;
+  const totalCases = graphData?.metrics.total_cases ?? 0;
+  const checkedCaseCount = graphData
+    ? graphData.variants.reduce((sum, v, idx) => (checkedVariantIndices.has(idx) ? sum + v.case_count : sum), 0)
+    : 0;
+  const isScopedSelection = totalVariants > 0 && checkedVariantIndices.size < totalVariants;
+
   const handleAnalyze = async () => {
     if (!graphData) return;
+
+    if (checkedVariantIndices.size === 0) {
+      setError('Selecione ao menos uma variante do processo no ProcessExplorer antes de gerar os insights.');
+      return;
+    }
 
     setLoading(true);
     setError('');
 
     try {
-      const response = await analyzeProcess(graphData, selectedEngine, extraPrompt || undefined);
+      let graphToAnalyze = graphData;
+
+      if (isScopedSelection) {
+        const selectedIds = unionSelectedCaseIds(caseIdsByVariant, checkedVariantIndices);
+        const scopedRows = eventLogRows.filter((row) => selectedIds.has(String(row.case_id)));
+        if (scopedRows.length === 0) {
+          throw new Error('Nenhum caso corresponde às variantes selecionadas - ajuste a seleção no ProcessExplorer.');
+        }
+        graphToAnalyze = await discoverProcessGraph(scopedRows, 'case_id', 'activity', 'timestamp');
+      }
+
+      const response = await analyzeProcess(graphToAnalyze, selectedEngine, extraPrompt || undefined);
       setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao gerar insights');
@@ -196,25 +238,40 @@ export default function AIConsultantModule({ graphData, onProcessedChange }: Pro
         />
       </div>
 
+      {totalVariants > 0 && (
+        <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '1.5rem', marginBottom: 0 }}>
+          🎯 Escopo da análise: <strong style={{ color: '#e5e7eb' }}>{checkedVariantIndices.size}</strong> de{' '}
+          <strong style={{ color: '#e5e7eb' }}>{totalVariants}</strong> variantes ·{' '}
+          <strong style={{ color: '#e5e7eb' }}>{checkedCaseCount}</strong> de{' '}
+          <strong style={{ color: '#e5e7eb' }}>{totalCases}</strong> casos selecionados no{' '}
+          <strong>ProcessExplorer</strong>
+        </p>
+      )}
+
       <button
         type="button"
         onClick={handleAnalyze}
-        disabled={loading}
+        disabled={loading || checkedVariantIndices.size === 0}
         style={{
-          marginTop: '1.5rem',
-          background: loading ? '#4b5563' : '#7c3aed',
+          marginTop: '0.75rem',
+          background: loading || checkedVariantIndices.size === 0 ? '#4b5563' : '#7c3aed',
           color: 'white',
           border: 'none',
           borderRadius: '8px',
           padding: '0.75rem 1.5rem',
           fontSize: '1rem',
           fontWeight: 'bold',
-          cursor: loading ? 'not-allowed' : 'pointer',
+          cursor: loading || checkedVariantIndices.size === 0 ? 'not-allowed' : 'pointer',
           transition: 'background 0.2s ease',
         }}
       >
         {loading ? '⏳ Analisando com IA...' : '🤖 Gerar Insights com IA'}
       </button>
+      {loading && selectedEngine === 'ollama' && (
+        <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+          Modelo local rodando na CPU - pode levar alguns minutos, dependendo da carga da sua máquina.
+        </p>
+      )}
 
       {error && (
         <div
