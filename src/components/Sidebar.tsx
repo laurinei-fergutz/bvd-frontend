@@ -1,4 +1,4 @@
-export type ModuleId = 'datamapper' | 'processexplorer';
+export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant';
 
 type ModuleStatus = {
   id: ModuleId;
@@ -13,7 +13,6 @@ type ComingSoonModule = {
 };
 
 const COMING_SOON: ComingSoonModule[] = [
-  { icon: '🤖', label: 'AI Consultant' },
   { icon: '💰', label: 'ROI Studio' },
   { icon: '🎛️', label: 'Command Center' },
 ];

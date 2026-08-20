@@ -175,3 +175,67 @@ export async function discoverProcessGraph(
   return response.json();
 }
 
+export type LLMEngine = {
+  id: string;
+  label: string;
+  configured: boolean;
+};
+
+export type EnginesResponse = {
+  engines: LLMEngine[];
+  default_system_prompt: string;
+};
+
+export async function fetchLLMEngines(): Promise<EnginesResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/ai/engines`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch LLM engines');
+  }
+  return response.json();
+}
+
+export type AutomationInsight = {
+  title: string;
+  category: 'rpa' | 'ai_agent';
+  description: string;
+  estimated_efficiency_gain: string;
+  complexity: 'low' | 'medium' | 'high';
+  business_justification: string;
+  related_activities: string[];
+};
+
+export type AnalyzeProcessResponse = {
+  insights: AutomationInsight[];
+  engine_used: string;
+  system_prompt: string;
+  generated_at: string;
+};
+
+export async function analyzeProcess(
+  graph: ProcessGraphResponse,
+  engine: string,
+  extraPrompt?: string,
+): Promise<AnalyzeProcessResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/ai/analyze`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      engine,
+      nodes: graph.nodes,
+      edges: graph.edges,
+      metrics: graph.metrics,
+      variants: graph.variants,
+      extra_prompt: extraPrompt || null,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to analyze process');
+  }
+
+  return response.json();
+}
+

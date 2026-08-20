@@ -1,0 +1,319 @@
+import { useEffect, useState } from 'react';
+
+import {
+  analyzeProcess,
+  fetchLLMEngines,
+  type AnalyzeProcessResponse,
+  type AutomationInsight,
+  type LLMEngine,
+  type ProcessGraphResponse,
+} from '../services/api';
+
+const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
+  low: 'Baixa complexidade',
+  medium: 'Média complexidade',
+  high: 'Alta complexidade',
+};
+
+const COMPLEXITY_COLOR: Record<AutomationInsight['complexity'], string> = {
+  low: '#10b981',
+  medium: '#f59e0b',
+  high: '#ef4444',
+};
+
+const textareaStyle: React.CSSProperties = {
+  width: '100%',
+  minHeight: '70px',
+  padding: '0.6rem',
+  borderRadius: '6px',
+  border: '1px solid #374151',
+  background: '#111827',
+  color: '#e5e7eb',
+  fontFamily: 'inherit',
+  fontSize: '0.9rem',
+  resize: 'vertical',
+};
+
+type Props = {
+  graphData: ProcessGraphResponse | null;
+  onProcessedChange: (done: boolean) => void;
+};
+
+export default function AIConsultantModule({ graphData, onProcessedChange }: Props) {
+  const [engines, setEngines] = useState<LLMEngine[]>([]);
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [enginesLoading, setEnginesLoading] = useState(true);
+  const [enginesError, setEnginesError] = useState('');
+  const [selectedEngine, setSelectedEngine] = useState('mock');
+  const [extraPrompt, setExtraPrompt] = useState('');
+
+  const [result, setResult] = useState<AnalyzeProcessResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchLLMEngines()
+      .then((res) => {
+        setEngines(res.engines);
+        setSystemPrompt(res.default_system_prompt);
+        const preferred = res.engines.find((e) => e.configured && e.id !== 'mock') ?? res.engines.find((e) => e.id === 'mock');
+        if (preferred) setSelectedEngine(preferred.id);
+      })
+      .catch((err) => setEnginesError(err instanceof Error ? err.message : 'Erro ao carregar motores de IA'))
+      .finally(() => setEnginesLoading(false));
+  }, []);
+
+  // A newly generated graph invalidates whatever insights were derived from the previous one.
+  useEffect(() => {
+    setResult(null);
+    setError('');
+  }, [graphData]);
+
+  useEffect(() => {
+    onProcessedChange(result !== null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  const handleAnalyze = async () => {
+    if (!graphData) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await analyzeProcess(graphData, selectedEngine, extraPrompt || undefined);
+      setResult(response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao gerar insights');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!graphData) {
+    return (
+      <div>
+        <h2 style={{ marginTop: 0 }}>🤖 Module 2: AI Process Consultant</h2>
+        <div
+          style={{
+            background: '#111827',
+            border: '1px dashed #374151',
+            borderRadius: '8px',
+            padding: '2rem',
+            textAlign: 'center',
+            color: '#9ca3af',
+          }}
+        >
+          <p style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>🔒 Módulo bloqueado</p>
+          <p>
+            Gere um grafo no <strong>ProcessExplorer</strong> primeiro - o consultor de IA analisa as variantes,
+            gargalos e métricas de lá.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const rpaInsights = result?.insights.filter((i) => i.category === 'rpa') ?? [];
+  const aiAgentInsights = result?.insights.filter((i) => i.category === 'ai_agent') ?? [];
+
+  return (
+    <div>
+      <h2 style={{ marginTop: 0 }}>🤖 Module 2: AI Process Consultant</h2>
+      <p style={{ color: '#9ca3af' }}>
+        O consultor virtual da plataforma: analisa o Gêmeo Digital do ProcessExplorer e recomenda onde aplicar RPA
+        e Agentes de IA.
+      </p>
+
+      <div style={{ marginTop: '1.5rem' }}>
+        <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.5rem' }}>
+          Motor de IA
+        </label>
+        {enginesLoading ? (
+          <p style={{ color: '#6b7280' }}>Carregando motores...</p>
+        ) : enginesError ? (
+          <p style={{ color: '#f87171' }}>❌ {enginesError}</p>
+        ) : (
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {engines.map((engine) => {
+              const active = engine.id === selectedEngine;
+              return (
+                <button
+                  key={engine.id}
+                  type="button"
+                  disabled={!engine.configured}
+                  onClick={() => setSelectedEngine(engine.id)}
+                  title={engine.configured ? undefined : 'Configure a API key correspondente para usar este motor'}
+                  style={{
+                    background: active ? '#1e293b' : '#111827',
+                    color: engine.configured ? (active ? '#e5e7eb' : '#9ca3af') : '#4b5563',
+                    border: `1px solid ${active ? '#3b82f6' : '#374151'}`,
+                    borderRadius: '8px',
+                    padding: '0.6rem 1rem',
+                    fontSize: '0.85rem',
+                    cursor: engine.configured ? 'pointer' : 'not-allowed',
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>{engine.label}</div>
+                  <div style={{ fontSize: '0.7rem', color: engine.configured ? '#10b981' : '#6b7280' }}>
+                    {engine.configured ? '● configurado' : '○ não configurado'}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <details style={{ marginTop: '1.5rem' }}>
+        <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>📜 Ver Prompt Consultivo do Sistema</summary>
+        <pre
+          style={{
+            background: '#111827',
+            padding: '1rem',
+            borderRadius: '4px',
+            marginTop: '0.5rem',
+            overflow: 'auto',
+            maxHeight: '300px',
+            fontSize: '0.75rem',
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {systemPrompt}
+        </pre>
+      </details>
+
+      <div style={{ marginTop: '1.5rem' }}>
+        <label style={{ color: '#9ca3af', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>
+          Instruções adicionais para o consultor <span style={{ color: '#6b7280' }}>(opcional)</span>
+        </label>
+        <textarea
+          value={extraPrompt}
+          onChange={(e) => setExtraPrompt(e.target.value)}
+          placeholder="Ex: priorize recomendações de baixo custo de implementação"
+          style={textareaStyle}
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleAnalyze}
+        disabled={loading}
+        style={{
+          marginTop: '1.5rem',
+          background: loading ? '#4b5563' : '#7c3aed',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '0.75rem 1.5rem',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          transition: 'background 0.2s ease',
+        }}
+      >
+        {loading ? '⏳ Analisando com IA...' : '🤖 Gerar Insights com IA'}
+      </button>
+
+      {error && (
+        <div
+          style={{
+            background: '#7f1d1d',
+            color: '#fecaca',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginTop: '1rem',
+            border: '1px solid #991b1b',
+          }}
+        >
+          ❌ {error}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop: '2rem' }}>
+          <p style={{ color: '#6b7280', fontSize: '0.8rem' }}>
+            Sessão de Insights gerada por <strong>{result.engine_used}</strong> em{' '}
+            {new Date(result.generated_at).toLocaleString('pt-BR')}
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
+            <InsightColumn title="🤖 Automação RPA" accent="#3b82f6" insights={rpaInsights} />
+            <InsightColumn title="🧠 Agentes de IA" accent="#a855f7" insights={aiAgentInsights} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InsightColumn({ title, accent, insights }: { title: string; accent: string; insights: AutomationInsight[] }) {
+  return (
+    <div>
+      <h3 style={{ color: accent, marginBottom: '0.75rem' }}>{title}</h3>
+      {insights.length === 0 ? (
+        <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Nenhuma recomendação nesta categoria.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+          {insights.map((insight, idx) => (
+            <InsightCard key={idx} insight={insight} accent={accent} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InsightCard({ insight, accent }: { insight: AutomationInsight; accent: string }) {
+  return (
+    <div style={{ background: '#111827', border: `1px solid ${accent}55`, borderRadius: '8px', padding: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+        <h4 style={{ margin: 0, color: '#e5e7eb' }}>{insight.title}</h4>
+        <span
+          style={{
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            color: COMPLEXITY_COLOR[insight.complexity],
+            border: `1px solid ${COMPLEXITY_COLOR[insight.complexity]}`,
+            borderRadius: '999px',
+            padding: '0.1rem 0.55rem',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {COMPLEXITY_LABEL[insight.complexity]}
+        </span>
+      </div>
+
+      <p style={{ color: '#d1d5db', fontSize: '0.85rem', marginTop: '0.5rem' }}>{insight.description}</p>
+
+      <p style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.5rem' }}>
+        📈 {insight.estimated_efficiency_gain}
+      </p>
+
+      <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
+        {insight.business_justification}
+      </p>
+
+      {insight.related_activities.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.65rem' }}>
+          {insight.related_activities.map((activity) => (
+            <span
+              key={activity}
+              style={{
+                background: '#1f2937',
+                border: '1px solid #374151',
+                borderRadius: '999px',
+                padding: '0.15rem 0.6rem',
+                fontSize: '0.72rem',
+                color: '#9ca3af',
+              }}
+            >
+              {activity}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -51,10 +51,10 @@ const labelStyle: React.CSSProperties = {
 
 type Props = {
   mapperResult: MapperUploadPreviewResponse | null;
-  onProcessedChange: (done: boolean) => void;
+  onGraphGenerated: (graph: ProcessGraphResponse | null) => void;
 };
 
-export default function ProcessExplorerModule({ mapperResult, onProcessedChange }: Props) {
+export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }: Props) {
   const [caseIdCol, setCaseIdCol] = useState('');
   const [activityCol, setActivityCol] = useState('');
   const [timestampCol, setTimestampCol] = useState('');
@@ -102,7 +102,7 @@ export default function ProcessExplorerModule({ mapperResult, onProcessedChange 
   }, [mapperResult]);
 
   useEffect(() => {
-    onProcessedChange(graphData !== null);
+    onGraphGenerated(graphData);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphData]);
 
