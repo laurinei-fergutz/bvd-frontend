@@ -166,6 +166,9 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
         <marker id="process-graph-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
           <path d="M0,0 L0,6 L9,3 z" fill="#64748b" />
         </marker>
+        <marker id="process-graph-arrow-bottleneck" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L9,3 z" fill="#ef4444" />
+        </marker>
       </defs>
 
       {graph.edges.map((edge: ProcessGraphEdge, idx) => {
@@ -181,24 +184,24 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
             <path
               d={edgePath(source, target)}
               fill="none"
-              stroke="#64748b"
-              strokeWidth={strokeWidth}
-              opacity={0.8}
-              markerEnd="url(#process-graph-arrow)"
+              stroke={edge.bottleneck ? '#ef4444' : '#64748b'}
+              strokeWidth={edge.bottleneck ? strokeWidth + 1.5 : strokeWidth}
+              opacity={edge.bottleneck ? 0.95 : 0.8}
+              markerEnd={edge.bottleneck ? 'url(#process-graph-arrow-bottleneck)' : 'url(#process-graph-arrow)'}
             />
             {edge.avg_duration_seconds != null && (
               <text
                 x={mid.x}
                 y={mid.y}
                 textAnchor="middle"
-                fill="#facc15"
+                fill={edge.bottleneck ? '#f87171' : '#facc15'}
                 fontSize={11}
-                fontWeight={600}
+                fontWeight={700}
                 paintOrder="stroke"
                 stroke="#0b1220"
                 strokeWidth={4}
               >
-                {formatDuration(edge.avg_duration_seconds)}
+                {edge.bottleneck ? `⚠️ ${formatDuration(edge.avg_duration_seconds)}` : formatDuration(edge.avg_duration_seconds)}
               </text>
             )}
           </g>

@@ -123,11 +123,29 @@ export type ProcessGraphEdge = {
   target: string;
   count: number;
   avg_duration_seconds: number | null;
+  dependency: number | null;
+  bottleneck: boolean;
+};
+
+export type ProcessMetrics = {
+  total_cases: number;
+  avg_lead_time_seconds: number | null;
+  median_lead_time_seconds: number | null;
+  min_lead_time_seconds: number | null;
+  max_lead_time_seconds: number | null;
+};
+
+export type ProcessVariant = {
+  sequence: string[];
+  case_count: number;
+  percentage: number;
 };
 
 export type ProcessGraphResponse = {
   nodes: ProcessGraphNode[];
   edges: ProcessGraphEdge[];
+  metrics: ProcessMetrics;
+  variants: ProcessVariant[];
 };
 
 export async function discoverProcessGraph(
