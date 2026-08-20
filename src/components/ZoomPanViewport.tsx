@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 
+import { IconRotateCcw, IconZoomIn, IconZoomOut } from './Icons';
+
 const MIN_SCALE = 0.3;
 const MAX_SCALE = 3;
 
@@ -12,9 +14,12 @@ const controlButtonStyle: React.CSSProperties = {
   color: '#e5e7eb',
   border: '1px solid #374151',
   borderRadius: '6px',
-  padding: '0.3rem 0.7rem',
+  padding: '0.35rem 0.6rem',
   fontSize: '0.85rem',
   cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '0.35rem',
 };
 
 type Props = {
@@ -68,14 +73,14 @@ export default function ZoomPanViewport({ children, height = 560 }: Props) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1.2)}>
-          🔍+
+        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1.2)} title="Aumentar zoom">
+          <IconZoomIn size={15} />
         </button>
-        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1 / 1.2)}>
-          🔍-
+        <button type="button" style={controlButtonStyle} onClick={() => zoomBy(1 / 1.2)} title="Diminuir zoom">
+          <IconZoomOut size={15} />
         </button>
         <button type="button" style={controlButtonStyle} onClick={reset}>
-          ↺ Resetar
+          <IconRotateCcw size={15} /> Resetar
         </button>
         <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>Arraste para mover · scroll para zoom</span>
       </div>

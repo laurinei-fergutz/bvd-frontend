@@ -11,6 +11,18 @@ import {
 import ProcessGraph, { formatDuration } from './ProcessGraph';
 import ProcessVariants from './ProcessVariants';
 import ZoomPanViewport from './ZoomPanViewport';
+import {
+  IconAlertTriangle,
+  IconCode,
+  IconFilter,
+  IconImage,
+  IconLayers,
+  IconLock,
+  IconSave,
+  IconSpinner,
+  IconWorkflow,
+  IconXCircle,
+} from './Icons';
 import { downloadJson, downloadSvgAsImage, downloadTextFile, graphToMermaidText } from '../utils/exportUtils';
 import {
   applyFilters,
@@ -222,7 +234,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
   if (!mapperResult) {
     return (
       <div>
-        <h2 style={{ marginTop: 0 }}>🔀 Module 1: ProcessExplorer</h2>
+        <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <IconWorkflow size={22} /> Module 1: ProcessExplorer
+        </h2>
         <div
           style={{
             background: '#111827',
@@ -233,7 +247,18 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
             color: '#9ca3af',
           }}
         >
-          <p style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>🔒 Módulo bloqueado</p>
+          <p
+            style={{
+              fontSize: '1.1rem',
+              marginBottom: '0.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <IconLock size={18} /> Módulo bloqueado
+          </p>
           <p>
             Envie um arquivo no <strong>DataMapper</strong> primeiro para desbloquear o mapeamento de colunas e o
             grafo do processo.
@@ -245,7 +270,9 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
 
   return (
     <div>
-      <h2 style={{ marginTop: 0 }}>🔀 Module 1: ProcessExplorer</h2>
+      <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <IconWorkflow size={22} /> Module 1: ProcessExplorer
+      </h2>
       <p style={{ color: '#9ca3af' }}>
         O Gêmeo Digital do seu processo: mapeie as colunas, filtre e gere o grafo (via pm4py) - mude a combinação e
         gere de novo para comparar.
@@ -324,7 +351,18 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
 
       {/* Dynamic multi-criteria filters: time range, resource, and one generic value/category column */}
       <details style={{ marginTop: '1.5rem' }} open>
-        <summary style={{ cursor: 'pointer', color: '#9ca3af', fontWeight: 600 }}>🔎 Filtros Dinâmicos</summary>
+        <summary
+          style={{
+            cursor: 'pointer',
+            color: '#9ca3af',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          <IconFilter size={15} /> Filtros Dinâmicos
+        </summary>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
           <div>
@@ -435,9 +473,20 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
           fontWeight: 'bold',
           cursor: graphLoading ? 'not-allowed' : 'pointer',
           transition: 'background 0.2s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
         }}
       >
-        {graphLoading ? '⏳ Filtrando, validando e gerando...' : '🔀 Gerar Grafo do Processo'}
+        {graphLoading ? (
+          <>
+            <IconSpinner size={16} /> Filtrando, validando e gerando...
+          </>
+        ) : (
+          <>
+            <IconWorkflow size={17} /> Gerar Grafo do Processo
+          </>
+        )}
       </button>
 
       {graphError && (
@@ -449,9 +498,12 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
             borderRadius: '8px',
             marginTop: '1rem',
             border: '1px solid #991b1b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
-          ❌ {graphError}
+          <IconXCircle size={18} /> {graphError}
         </div>
       )}
 
@@ -492,14 +544,26 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
-            <button type="button" style={exportButtonStyle} onClick={() => downloadJson(graphData, 'process-graph.json')}>
-              💾 Salvar JSON
+            <button
+              type="button"
+              style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => downloadJson(graphData, 'process-graph.json')}
+            >
+              <IconSave size={15} /> Salvar JSON
             </button>
-            <button type="button" style={exportButtonStyle} onClick={() => handleExportImage('png')}>
-              🖼️ Exportar PNG
+            <button
+              type="button"
+              style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => handleExportImage('png')}
+            >
+              <IconImage size={15} /> Exportar PNG
             </button>
-            <button type="button" style={exportButtonStyle} onClick={() => handleExportImage('jpeg')}>
-              🖼️ Exportar JPG
+            <button
+              type="button"
+              style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+              onClick={() => handleExportImage('jpeg')}
+            >
+              <IconImage size={15} /> Exportar JPG
             </button>
           </div>
 
@@ -512,9 +576,12 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
                 borderRadius: '8px',
                 marginBottom: '1rem',
                 border: '1px solid #991b1b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
               }}
             >
-              ❌ {exportError}
+              <IconXCircle size={16} /> {exportError}
             </div>
           )}
 
@@ -523,7 +590,11 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
           </ZoomPanViewport>
 
           <details style={{ marginTop: '1rem' }}>
-            <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>📝 Ver como texto estruturado (Mermaid)</summary>
+            <summary
+              style={{ cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <IconCode size={15} /> Ver como texto estruturado (Mermaid)
+            </summary>
             <pre
               style={{
                 background: '#111827',
@@ -539,16 +610,24 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
             </pre>
             <button
               type="button"
-              style={{ ...exportButtonStyle, marginTop: '0.5rem' }}
+              style={{
+                ...exportButtonStyle,
+                marginTop: '0.5rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
               onClick={() => downloadTextFile(graphToMermaidText(graphData), 'process-graph.mmd')}
             >
-              💾 Baixar .mmd
+              <IconSave size={15} /> Baixar .mmd
             </button>
           </details>
 
           {graphData.variants.length > 0 && (
             <div style={{ marginTop: '2rem' }}>
-              <h3 style={{ marginBottom: '0.25rem' }}>🧬 Variantes do Processo</h3>
+              <h3 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <IconLayers size={18} /> Variantes do Processo
+              </h3>
               <p style={{ color: '#9ca3af', marginTop: 0, fontSize: '0.85rem' }}>
                 Sequências de atividades agrupadas por frequência - a mais comum é o "caminho feliz". Marque as
                 variantes que o <strong>AI Consultant</strong> deve considerar na análise.
@@ -559,8 +638,18 @@ export default function ProcessExplorerModule({ mapperResult, onGraphGenerated }
                 onToggle={handleToggleVariant}
               />
               {checkedVariants.size === 0 && (
-                <p style={{ color: '#f87171', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-                  ⚠️ Nenhuma variante selecionada - marque ao menos uma para habilitar a análise de IA.
+                <p
+                  style={{
+                    color: '#f87171',
+                    fontSize: '0.8rem',
+                    marginTop: '0.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <IconAlertTriangle size={14} /> Nenhuma variante selecionada - marque ao menos uma para habilitar a
+                  análise de IA.
                 </p>
               )}
             </div>

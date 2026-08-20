@@ -11,6 +11,16 @@ import {
   type ProcessGraphResponse,
 } from '../services/api';
 import { computeCaseIdsByVariant, unionSelectedCaseIds } from '../utils/variantSelection';
+import {
+  IconBot,
+  IconBrain,
+  IconDocument,
+  IconLock,
+  IconSpinner,
+  IconTarget,
+  IconTrendingUp,
+  IconXCircle,
+} from './Icons';
 
 const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
   low: 'Baixa complexidade',
@@ -135,7 +145,9 @@ export default function AIConsultantModule({
   if (!graphData) {
     return (
       <div>
-        <h2 style={{ marginTop: 0 }}>🤖 Module 2: AI Process Consultant</h2>
+        <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <IconBot size={22} /> Module 2: AI Process Consultant
+        </h2>
         <div
           style={{
             background: '#111827',
@@ -146,7 +158,18 @@ export default function AIConsultantModule({
             color: '#9ca3af',
           }}
         >
-          <p style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>🔒 Módulo bloqueado</p>
+          <p
+            style={{
+              fontSize: '1.1rem',
+              marginBottom: '0.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <IconLock size={18} /> Módulo bloqueado
+          </p>
           <p>
             Gere um grafo no <strong>ProcessExplorer</strong> primeiro - o consultor de IA analisa as variantes,
             gargalos e métricas de lá.
@@ -161,7 +184,9 @@ export default function AIConsultantModule({
 
   return (
     <div>
-      <h2 style={{ marginTop: 0 }}>🤖 Module 2: AI Process Consultant</h2>
+      <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <IconBot size={22} /> Module 2: AI Process Consultant
+      </h2>
       <p style={{ color: '#9ca3af' }}>
         O consultor virtual da plataforma: analisa o Gêmeo Digital do ProcessExplorer e recomenda onde aplicar RPA
         e Agentes de IA.
@@ -174,7 +199,9 @@ export default function AIConsultantModule({
         {enginesLoading ? (
           <p style={{ color: '#6b7280' }}>Carregando motores...</p>
         ) : enginesError ? (
-          <p style={{ color: '#f87171' }}>❌ {enginesError}</p>
+          <p style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <IconXCircle size={15} /> {enginesError}
+          </p>
         ) : (
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             {engines.map((engine) => {
@@ -209,7 +236,11 @@ export default function AIConsultantModule({
       </div>
 
       <details style={{ marginTop: '1.5rem' }}>
-        <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>📜 Ver Prompt Consultivo do Sistema</summary>
+        <summary
+          style={{ cursor: 'pointer', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+        >
+          <IconDocument size={15} /> Ver Prompt Consultivo do Sistema
+        </summary>
         <pre
           style={{
             background: '#111827',
@@ -239,8 +270,18 @@ export default function AIConsultantModule({
       </div>
 
       {totalVariants > 0 && (
-        <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '1.5rem', marginBottom: 0 }}>
-          🎯 Escopo da análise: <strong style={{ color: '#e5e7eb' }}>{checkedVariantIndices.size}</strong> de{' '}
+        <p
+          style={{
+            color: '#9ca3af',
+            fontSize: '0.8rem',
+            marginTop: '1.5rem',
+            marginBottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+          }}
+        >
+          <IconTarget size={14} /> Escopo da análise: <strong style={{ color: '#e5e7eb' }}>{checkedVariantIndices.size}</strong> de{' '}
           <strong style={{ color: '#e5e7eb' }}>{totalVariants}</strong> variantes ·{' '}
           <strong style={{ color: '#e5e7eb' }}>{checkedCaseCount}</strong> de{' '}
           <strong style={{ color: '#e5e7eb' }}>{totalCases}</strong> casos selecionados no{' '}
@@ -263,9 +304,20 @@ export default function AIConsultantModule({
           fontWeight: 'bold',
           cursor: loading || checkedVariantIndices.size === 0 ? 'not-allowed' : 'pointer',
           transition: 'background 0.2s ease',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
         }}
       >
-        {loading ? '⏳ Analisando com IA...' : '🤖 Gerar Insights com IA'}
+        {loading ? (
+          <>
+            <IconSpinner size={16} /> Analisando com IA...
+          </>
+        ) : (
+          <>
+            <IconBot size={17} /> Gerar Insights com IA
+          </>
+        )}
       </button>
       {loading && selectedEngine === 'ollama' && (
         <p style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.5rem' }}>
@@ -282,9 +334,12 @@ export default function AIConsultantModule({
             borderRadius: '8px',
             marginTop: '1rem',
             border: '1px solid #991b1b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
-          ❌ {error}
+          <IconXCircle size={18} /> {error}
         </div>
       )}
 
@@ -296,8 +351,24 @@ export default function AIConsultantModule({
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1rem' }}>
-            <InsightColumn title="🤖 Automação RPA" accent="#3b82f6" insights={rpaInsights} />
-            <InsightColumn title="🧠 Agentes de IA" accent="#a855f7" insights={aiAgentInsights} />
+            <InsightColumn
+              title={
+                <>
+                  <IconBot size={16} /> Automação RPA
+                </>
+              }
+              accent="#3b82f6"
+              insights={rpaInsights}
+            />
+            <InsightColumn
+              title={
+                <>
+                  <IconBrain size={16} /> Agentes de IA
+                </>
+              }
+              accent="#a855f7"
+              insights={aiAgentInsights}
+            />
           </div>
         </div>
       )}
@@ -305,10 +376,28 @@ export default function AIConsultantModule({
   );
 }
 
-function InsightColumn({ title, accent, insights }: { title: string; accent: string; insights: AutomationInsight[] }) {
+function InsightColumn({
+  title,
+  accent,
+  insights,
+}: {
+  title: React.ReactNode;
+  accent: string;
+  insights: AutomationInsight[];
+}) {
   return (
     <div>
-      <h3 style={{ color: accent, marginBottom: '0.75rem' }}>{title}</h3>
+      <h3
+        style={{
+          color: accent,
+          marginBottom: '0.75rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+        }}
+      >
+        {title}
+      </h3>
       {insights.length === 0 ? (
         <p style={{ color: '#6b7280', fontSize: '0.85rem' }}>Nenhuma recomendação nesta categoria.</p>
       ) : (
@@ -344,8 +433,18 @@ function InsightCard({ insight, accent }: { insight: AutomationInsight; accent: 
 
       <p style={{ color: '#d1d5db', fontSize: '0.85rem', marginTop: '0.5rem' }}>{insight.description}</p>
 
-      <p style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600, marginTop: '0.5rem' }}>
-        📈 {insight.estimated_efficiency_gain}
+      <p
+        style={{
+          color: '#10b981',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          marginTop: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+        }}
+      >
+        <IconTrendingUp size={14} /> {insight.estimated_efficiency_gain}
       </p>
 
       <p style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic' }}>

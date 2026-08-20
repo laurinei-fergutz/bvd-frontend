@@ -1,20 +1,22 @@
+import { IconDollarSign, IconSliders } from './Icons';
+
 export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant';
 
 type ModuleStatus = {
   id: ModuleId;
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   done: boolean;
 };
 
 type ComingSoonModule = {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
 };
 
 const COMING_SOON: ComingSoonModule[] = [
-  { icon: '💰', label: 'ROI Studio' },
-  { icon: '🎛️', label: 'Command Center' },
+  { icon: <IconDollarSign size={16} />, label: 'ROI Studio' },
+  { icon: <IconSliders size={16} />, label: 'Command Center' },
 ];
 
 type Props = {

@@ -1,4 +1,5 @@
 import type { ProcessVariant } from '../services/api';
+import { IconTrophy } from './Icons';
 
 type Props = {
   variants: ProcessVariant[];
@@ -32,8 +33,23 @@ export default function ProcessVariants({ variants, checkedIndices, onToggle }: 
                   onChange={() => onToggle(idx)}
                   style={{ cursor: 'pointer' }}
                 />
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: idx === 0 ? '#10b981' : '#9ca3af' }}>
-                  {idx === 0 ? '🏆 Caminho Feliz' : `Variante ${idx + 1}`}
+                <span
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: idx === 0 ? '#10b981' : '#9ca3af',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  {idx === 0 ? (
+                    <>
+                      <IconTrophy size={14} /> Caminho Feliz
+                    </>
+                  ) : (
+                    `Variante ${idx + 1}`
+                  )}
                 </span>
               </label>
               <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>

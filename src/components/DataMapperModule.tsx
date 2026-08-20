@@ -2,6 +2,18 @@ import { useRef, useState } from 'react';
 
 import { uploadMapperFile, type MapperUploadPreviewResponse } from '../services/api';
 import { downloadJson } from '../utils/exportUtils';
+import {
+  IconCheck,
+  IconCheckCircle,
+  IconClipboard,
+  IconFolder,
+  IconInfo,
+  IconSave,
+  IconSpinner,
+  IconUpload,
+  IconWorkflow,
+  IconXCircle,
+} from './Icons';
 
 const ACCEPTED_EXTENSIONS = ['.csv', '.xlsx', '.log', '.xes'];
 
@@ -74,7 +86,9 @@ export default function DataMapperModule({ result, onResult }: Props) {
 
   return (
     <div>
-      <h2 style={{ marginTop: 0 }}>📁 Module 0: DataMapper</h2>
+      <h2 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <IconFolder size={22} /> Module 0: DataMapper
+      </h2>
       <p style={{ color: '#9ca3af' }}>A porta de entrada inteligente: envie seus dados e veja o schema inferido.</p>
 
       <div
@@ -99,8 +113,25 @@ export default function DataMapperModule({ result, onResult }: Props) {
           if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click();
         }}
       >
-        <p style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-          {loading ? '⏳ Processando arquivo...' : '📤 Arraste um arquivo CSV, Excel (.xlsx), log (.log) ou XES (.xes) aqui'}
+        <p
+          style={{
+            fontSize: '1.15rem',
+            marginBottom: '0.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          {loading ? (
+            <>
+              <IconSpinner size={20} /> Processando arquivo...
+            </>
+          ) : (
+            <>
+              <IconUpload size={20} /> Arraste um arquivo CSV, Excel (.xlsx), log (.log) ou XES (.xes) aqui
+            </>
+          )}
         </p>
         <p style={{ color: '#9ca3af' }}>ou clique para selecionar</p>
         <input
@@ -124,9 +155,12 @@ export default function DataMapperModule({ result, onResult }: Props) {
             borderRadius: '8px',
             marginTop: '1rem',
             border: '1px solid #991b1b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
           }}
         >
-          ❌ {error}
+          <IconXCircle size={18} /> {error}
         </div>
       )}
 
@@ -190,7 +224,17 @@ export default function DataMapperModule({ result, onResult }: Props) {
             </table>
           </div>
 
-          <h3 style={{ color: '#10b981', marginBottom: '1rem' }}>✅ Schema Inferido com Sucesso!</h3>
+          <h3
+            style={{
+              color: '#10b981',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <IconCheckCircle size={18} /> Schema Inferido com Sucesso!
+          </h3>
 
           <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
@@ -214,15 +258,25 @@ export default function DataMapperModule({ result, onResult }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <button
               type="button"
-              style={exportButtonStyle}
+              style={{ ...exportButtonStyle, display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
               onClick={() => downloadJson(result, `${result.filename.replace(/\.[^.]+$/, '')}.json`)}
             >
-              💾 Salvar JSON
+              <IconSave size={15} /> Salvar JSON
             </button>
           </div>
 
           <details style={{ marginTop: '0.75rem' }}>
-            <summary style={{ cursor: 'pointer', color: '#9ca3af' }}>📋 Ver resposta completa (JSON)</summary>
+            <summary
+              style={{
+                cursor: 'pointer',
+                color: '#9ca3af',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <IconClipboard size={15} /> Ver resposta completa (JSON)
+            </summary>
             <pre
               style={{
                 background: '#111827',
@@ -238,8 +292,18 @@ export default function DataMapperModule({ result, onResult }: Props) {
             </pre>
           </details>
 
-          <p style={{ color: '#9ca3af', marginBottom: 0, marginTop: '1.5rem' }}>
-            🔀 Vá para o <strong>ProcessExplorer</strong> para mapear as colunas e montar o grafo do processo.
+          <p
+            style={{
+              color: '#9ca3af',
+              marginBottom: 0,
+              marginTop: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
+            <IconWorkflow size={16} /> Vá para o <strong>ProcessExplorer</strong> para mapear as colunas e montar o
+            grafo do processo.
           </p>
         </div>
       )}
@@ -253,13 +317,30 @@ export default function DataMapperModule({ result, onResult }: Props) {
           border: '1px solid #374151',
         }}
       >
-        <h3>ℹ️ Sobre o DataMapper</h3>
-        <ul style={{ color: '#d1d5db', lineHeight: '1.8' }}>
-          <li>✓ Upload de arquivos CSV, Excel (.xlsx), log (.log) ou XES (.xes) com drag & drop</li>
-          <li>✓ Interpretação de logs (JSON lines, logfmt ou texto livre) estruturados em JSON</li>
-          <li>✓ Análise automática de tipos de dados (string, integer, float, datetime, boolean)</li>
-          <li>✓ Preview interativo dos dados (amostragem inteligente de até 100 linhas)</li>
-          <li>✓ Mapeamento de colunas e sanitização acontecem no ProcessExplorer, para testar combinações diferentes</li>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <IconInfo size={17} /> Sobre o DataMapper
+        </h3>
+        <ul style={{ color: '#d1d5db', lineHeight: '1.8', listStyle: 'none', padding: 0, margin: 0 }}>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <IconCheck size={15} color="#10b981" style={{ marginTop: '0.3rem' }} />
+            <span>Upload de arquivos CSV, Excel (.xlsx), log (.log) ou XES (.xes) com drag & drop</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <IconCheck size={15} color="#10b981" style={{ marginTop: '0.3rem' }} />
+            <span>Interpretação de logs (JSON lines, logfmt ou texto livre) estruturados em JSON</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <IconCheck size={15} color="#10b981" style={{ marginTop: '0.3rem' }} />
+            <span>Análise automática de tipos de dados (string, integer, float, datetime, boolean)</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <IconCheck size={15} color="#10b981" style={{ marginTop: '0.3rem' }} />
+            <span>Preview interativo dos dados (amostragem inteligente de até 100 linhas)</span>
+          </li>
+          <li style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <IconCheck size={15} color="#10b981" style={{ marginTop: '0.3rem' }} />
+            <span>Mapeamento de colunas e sanitização acontecem no ProcessExplorer, para testar combinações diferentes</span>
+          </li>
         </ul>
       </section>
     </div>

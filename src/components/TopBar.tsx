@@ -1,3 +1,5 @@
+import { IconRocket } from './Icons';
+
 export default function TopBar() {
   return (
     <header
@@ -11,7 +13,7 @@ export default function TopBar() {
         flexShrink: 0,
       }}
     >
-      <span style={{ fontSize: '1.75rem', lineHeight: 1 }}>🚀</span>
+      <IconRocket size={28} strokeWidth={1.6} style={{ color: '#60a5fa' }} />
       <div>
         <p
           style={{

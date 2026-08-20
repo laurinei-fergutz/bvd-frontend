@@ -6,6 +6,7 @@ import Sidebar, { type ModuleId } from './components/Sidebar';
 import DataMapperModule from './components/DataMapperModule';
 import ProcessExplorerModule from './components/ProcessExplorerModule';
 import AIConsultantModule from './components/AIConsultantModule';
+import { IconBot, IconFolder, IconWorkflow } from './components/Icons';
 
 export default function App() {
   const [activeModule, setActiveModule] = useState<ModuleId>('datamapper');
@@ -34,9 +35,14 @@ export default function App() {
           activeModule={activeModule}
           onSelect={setActiveModule}
           modules={[
-            { id: 'datamapper', icon: '📁', label: 'DataMapper', done: mapperResult !== null },
-            { id: 'processexplorer', icon: '🔀', label: 'ProcessExplorer', done: graphData !== null },
-            { id: 'aiconsultant', icon: '🤖', label: 'AI Consultant', done: aiConsultantDone },
+            { id: 'datamapper', icon: <IconFolder size={16} />, label: 'DataMapper', done: mapperResult !== null },
+            {
+              id: 'processexplorer',
+              icon: <IconWorkflow size={16} />,
+              label: 'ProcessExplorer',
+              done: graphData !== null,
+            },
+            { id: 'aiconsultant', icon: <IconBot size={16} />, label: 'AI Consultant', done: aiConsultantDone },
           ]}
         />
 

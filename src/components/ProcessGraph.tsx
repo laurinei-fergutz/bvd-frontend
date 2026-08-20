@@ -190,19 +190,29 @@ export default function ProcessGraph({ graph, svgRef }: Props) {
               markerEnd={edge.bottleneck ? 'url(#process-graph-arrow-bottleneck)' : 'url(#process-graph-arrow)'}
             />
             {edge.avg_duration_seconds != null && (
-              <text
-                x={mid.x}
-                y={mid.y}
-                textAnchor="middle"
-                fill={edge.bottleneck ? '#f87171' : '#facc15'}
-                fontSize={11}
-                fontWeight={700}
-                paintOrder="stroke"
-                stroke="#0b1220"
-                strokeWidth={4}
-              >
-                {edge.bottleneck ? `⚠️ ${formatDuration(edge.avg_duration_seconds)}` : formatDuration(edge.avg_duration_seconds)}
-              </text>
+              <g>
+                {edge.bottleneck && (
+                  <path
+                    d={`M ${mid.x - 22} ${mid.y - 3} l4 -7 l4 7 z`}
+                    fill="#f87171"
+                    stroke="#0b1220"
+                    strokeWidth={0.75}
+                  />
+                )}
+                <text
+                  x={mid.x}
+                  y={mid.y}
+                  textAnchor="middle"
+                  fill={edge.bottleneck ? '#f87171' : '#facc15'}
+                  fontSize={11}
+                  fontWeight={700}
+                  paintOrder="stroke"
+                  stroke="#0b1220"
+                  strokeWidth={4}
+                >
+                  {formatDuration(edge.avg_duration_seconds)}
+                </text>
+              </g>
             )}
           </g>
         );
