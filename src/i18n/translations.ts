@@ -140,6 +140,8 @@ const dictionaries = {
     'ai.configured': '● configurado',
     'ai.notConfigured': '○ não configurado',
     'ai.viewSystemPrompt': 'Ver Prompt Consultivo do Sistema',
+    'ai.systemPromptMovedPrefix': 'O prompt de sistema usado pelo consultor pode ser visto e configurado em',
+    'ai.systemPromptMovedSuffix': '.',
     'ai.extraInstructions': 'Instruções adicionais para o consultor',
     'ai.optional': '(opcional)',
     'ai.extraPromptPlaceholder': 'Ex: priorize recomendações de baixo custo de implementação',
@@ -194,6 +196,16 @@ const dictionaries = {
     'settings.defaultEngineText':
       'Em breve: escolha aqui o motor de IA padrão (Ollama, Anthropic, OpenAI) para todo o AI Consultant. Por enquanto, o motor é selecionado diretamente no módulo',
     'settings.defaultEngineTextSuffix': ', a cada análise.',
+    'settings.promptSection': 'Prompt do Consultor de IA',
+    'settings.promptSectionSubtitle': 'Prompt de sistema usado pelo AI Consultant para gerar os insights.',
+    'settings.promptPredefined': 'Pré-definido',
+    'settings.promptLlamaGenerated': 'Gerado por IA (Llama)',
+    'settings.promptLlamaGeneratedDesc':
+      'Sugere variações no prompt com base nos tipos de variantes de processo mapeadas no ProcessExplorer.',
+    'settings.promptLlamaNotImplemented':
+      'A geração automática do prompt ainda não foi implementada - por enquanto, o prompt pré-definido continua sendo usado independentemente desta escolha.',
+    'settings.selectOption': 'Selecionar',
+    'settings.currentPromptLoading': 'Carregando prompt...',
   },
   en: {
     // Welcome screen
@@ -327,6 +339,8 @@ const dictionaries = {
     'ai.configured': '● configured',
     'ai.notConfigured': '○ not configured',
     'ai.viewSystemPrompt': 'View System Consulting Prompt',
+    'ai.systemPromptMovedPrefix': "The consultant's system prompt can be viewed and configured in",
+    'ai.systemPromptMovedSuffix': '.',
     'ai.extraInstructions': 'Additional instructions for the consultant',
     'ai.optional': '(optional)',
     'ai.extraPromptPlaceholder': 'E.g.: prioritize low implementation-cost recommendations',
@@ -380,6 +394,16 @@ const dictionaries = {
     'settings.defaultEngineText':
       'Coming soon: choose the default AI engine here (Ollama, Anthropic, OpenAI) for the whole AI Consultant. For now, the engine is selected directly in the',
     'settings.defaultEngineTextSuffix': 'module, for each analysis.',
+    'settings.promptSection': 'AI Consultant Prompt',
+    'settings.promptSectionSubtitle': 'System prompt used by the AI Consultant to generate insights.',
+    'settings.promptPredefined': 'Predefined',
+    'settings.promptLlamaGenerated': 'AI-Generated (Llama)',
+    'settings.promptLlamaGeneratedDesc':
+      'Suggests prompt variations based on the process variant types mapped in ProcessExplorer.',
+    'settings.promptLlamaNotImplemented':
+      "Automatic prompt generation isn't implemented yet - for now, the predefined prompt keeps being used regardless of this choice.",
+    'settings.selectOption': 'Select',
+    'settings.currentPromptLoading': 'Loading prompt...',
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

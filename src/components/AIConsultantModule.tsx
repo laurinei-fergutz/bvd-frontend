@@ -52,7 +52,6 @@ export default function AIConsultantModule({
 }: Props) {
   const { t, language } = useSettings();
   const [engines, setEngines] = useState<LLMEngine[]>([]);
-  const [systemPrompt, setSystemPrompt] = useState('');
   const [enginesLoading, setEnginesLoading] = useState(true);
   const [enginesError, setEnginesError] = useState('');
   const [selectedEngine, setSelectedEngine] = useState('ollama');
@@ -80,7 +79,6 @@ export default function AIConsultantModule({
     fetchLLMEngines()
       .then((res) => {
         setEngines(res.engines);
-        setSystemPrompt(res.default_system_prompt);
         // Prefer Ollama (free, local, no key needed) when it's ready to go,
         // then fall back to any other configured engine.
         const preferred =
@@ -252,27 +250,9 @@ export default function AIConsultantModule({
         )}
       </div>
 
-      <details style={{ marginTop: '1.5rem' }}>
-        <summary
-          style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-        >
-          <IconDocument size={15} /> {t('ai.viewSystemPrompt')}
-        </summary>
-        <pre
-          style={{
-            background: 'var(--bg-surface)',
-            padding: '1rem',
-            borderRadius: '4px',
-            marginTop: '0.5rem',
-            overflow: 'auto',
-            maxHeight: '300px',
-            fontSize: '0.75rem',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {systemPrompt}
-        </pre>
-      </details>
+      <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem', marginTop: '1rem' }}>
+        {t('ai.systemPromptMovedPrefix')} <strong>{t('sidebar.settings')}</strong> {t('ai.systemPromptMovedSuffix')}
+      </p>
 
       <div style={{ marginTop: '1.5rem' }}>
         <label style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'block', marginBottom: '0.25rem' }}>

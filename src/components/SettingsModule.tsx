@@ -1,5 +1,15 @@
-import { AVAILABLE_LANGUAGES, AVAILABLE_THEMES, useSettings, type Language, type ThemeMode } from '../context/SettingsContext';
-import { IconBot, IconGlobe, IconMoon, IconSettings, IconSun } from './Icons';
+import { useEffect, useState } from 'react';
+
+import {
+  AVAILABLE_LANGUAGES,
+  AVAILABLE_THEMES,
+  useSettings,
+  type Language,
+  type PromptMode,
+  type ThemeMode,
+} from '../context/SettingsContext';
+import { fetchLLMEngines } from '../services/api';
+import { IconAlertTriangle, IconBot, IconBrain, IconDocument, IconGlobe, IconMoon, IconSettings, IconSun } from './Icons';
 
 const cardBase: React.CSSProperties = {
   border: '1px solid var(--border)',
@@ -19,6 +29,7 @@ type OptionCardProps = {
   active: boolean;
   available: boolean;
   activeLabel: string;
+  inactiveLabel: string;
   comingSoonLabel: string;
   comingSoonTitle: string;
   onClick: () => void;
@@ -30,10 +41,14 @@ function OptionCard({
   active,
   available,
   activeLabel,
+  inactiveLabel,
   comingSoonLabel,
   comingSoonTitle,
   onClick,
 }: OptionCardProps) {
+  const statusLabel = !available ? comingSoonLabel : active ? activeLabel : inactiveLabel;
+  const statusColor = available && active ? 'var(--accent-green)' : 'var(--text-tertiary)';
+
   return (
     <button
       type="button"
@@ -51,9 +66,7 @@ function OptionCard({
       {icon}
       <span style={{ flex: 1 }}>
         <div style={{ fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: '0.7rem', color: available ? 'var(--accent-green)' : 'var(--text-tertiary)' }}>
-          {available ? activeLabel : comingSoonLabel}
-        </div>
+        <div style={{ fontSize: '0.7rem', color: statusColor }}>{statusLabel}</div>
       </span>
     </button>
   );
@@ -71,7 +84,18 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 
 export default function SettingsModule() {
-  const { theme, setTheme, language, setLanguage, t } = useSettings();
+  const { theme, setTheme, language, setLanguage, promptMode, setPromptMode, t } = useSettings();
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [systemPromptLoading, setSystemPromptLoading] = useState(true);
+  const [systemPromptError, setSystemPromptError] = useState('');
+
+  useEffect(() => {
+    fetchLLMEngines()
+      .then((res) => setSystemPrompt(res.default_system_prompt))
+      .catch((err) => setSystemPromptError(err instanceof Error ? err.message : t('ai.enginesError')))
+      .finally(() => setSystemPromptLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div>
@@ -94,6 +118,7 @@ export default function SettingsModule() {
             active={theme === 'dark'}
             available={AVAILABLE_THEMES.includes('dark' as ThemeMode)}
             activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
             comingSoonLabel={t('settings.comingSoon')}
             comingSoonTitle={t('settings.comingSoonTitle')}
             onClick={() => setTheme('dark')}
@@ -104,6 +129,7 @@ export default function SettingsModule() {
             active={theme === 'light'}
             available={AVAILABLE_THEMES.includes('light' as ThemeMode)}
             activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
             comingSoonLabel={t('settings.comingSoon')}
             comingSoonTitle={t('settings.comingSoonTitle')}
             onClick={() => setTheme('light')}
@@ -125,6 +151,7 @@ export default function SettingsModule() {
             active={language === 'pt'}
             available={AVAILABLE_LANGUAGES.includes('pt' as Language)}
             activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
             comingSoonLabel={t('settings.comingSoon')}
             comingSoonTitle={t('settings.comingSoonTitle')}
             onClick={() => setLanguage('pt')}
@@ -135,11 +162,88 @@ export default function SettingsModule() {
             active={language === 'en'}
             available={AVAILABLE_LANGUAGES.includes('en' as Language)}
             activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
             comingSoonLabel={t('settings.comingSoon')}
             comingSoonTitle={t('settings.comingSoonTitle')}
             onClick={() => setLanguage('en')}
           />
         </div>
+      </section>
+
+      <section style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>
+          <IconDocument size={16} /> {t('settings.promptSection')}
+        </h3>
+        <p style={{ color: 'var(--text-secondary)', marginTop: 0, fontSize: '0.85rem' }}>
+          {t('settings.promptSectionSubtitle')}
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <OptionCard
+            icon={<IconDocument size={17} />}
+            label={t('settings.promptPredefined')}
+            active={promptMode === 'predefined'}
+            available
+            activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
+            comingSoonLabel={t('settings.comingSoon')}
+            comingSoonTitle={t('settings.comingSoonTitle')}
+            onClick={() => setPromptMode('predefined' as PromptMode)}
+          />
+          <OptionCard
+            icon={<IconBrain size={17} />}
+            label={t('settings.promptLlamaGenerated')}
+            active={promptMode === 'llama'}
+            available
+            activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
+            comingSoonLabel={t('settings.comingSoon')}
+            comingSoonTitle={t('settings.comingSoonTitle')}
+            onClick={() => setPromptMode('llama' as PromptMode)}
+          />
+        </div>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: '0.8rem', marginTop: '0.6rem', maxWidth: '640px' }}>
+          {t('settings.promptLlamaGeneratedDesc')}
+        </p>
+
+        {promptMode === 'llama' && (
+          <p
+            style={{
+              color: 'var(--accent-amber)',
+              fontSize: '0.8rem',
+              marginTop: '0.5rem',
+              maxWidth: '640px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '0.4rem',
+            }}
+          >
+            <IconAlertTriangle size={14} style={{ marginTop: '0.15rem', flexShrink: 0 }} />
+            {t('settings.promptLlamaNotImplemented')}
+          </p>
+        )}
+
+        <details style={{ marginTop: '1rem' }}>
+          <summary
+            style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <IconDocument size={15} /> {t('ai.viewSystemPrompt')}
+          </summary>
+          <pre
+            style={{
+              background: 'var(--bg-surface)',
+              padding: '1rem',
+              borderRadius: '4px',
+              marginTop: '0.5rem',
+              overflow: 'auto',
+              maxHeight: '300px',
+              fontSize: '0.75rem',
+              whiteSpace: 'pre-wrap',
+              color: 'var(--text-body)',
+            }}
+          >
+            {systemPromptLoading ? t('settings.currentPromptLoading') : systemPromptError || systemPrompt}
+          </pre>
+        </details>
       </section>
 
       <section style={sectionStyle}>
