@@ -12,6 +12,99 @@ const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 
 const INK = { title: [30, 41, 59], heading: [15, 23, 42], body: [51, 65, 85], muted: [100, 116, 139], faint: [148, 163, 184], accentBlue: [30, 64, 175], accentGreen: [5, 150, 105] } as const;
 
+// Print-oriented palette for the little flow diagrams - fixed regardless of
+// the app's current on-screen theme, since a PDF page is always white paper.
+const DIAGRAM = {
+  boxFill: '#eef2f7',
+  boxStroke: '#2563eb',
+  happyStroke: '#059669',
+  text: '#0f172a',
+  arrow: '#64748b',
+};
+
+function escapeXml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+/** Rasterizes an SVG string to a PNG data URL via canvas, at the given pixel scale. */
+function svgToPngDataUrl(svgString: string, width: number, height: number, scale: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Failed to acquire canvas context');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)));
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to rasterize variant diagram'));
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Renders one process variant's activity sequence as a small left-to-right
+ * flow diagram (boxes + arrows) and rasterizes it to PNG. Units here double
+ * as the mm size the image will be placed at in the PDF - only the raster
+ * resolution (scale) is bumped up separately for print sharpness.
+ */
+async function renderVariantDiagram(sequence: string[], isHappyPath: boolean): Promise<{ dataUrl: string; width: number; height: number }> {
+  const boxWidth = 34;
+  const boxHeight = 14;
+  const gapX = 10;
+  const padding = 4;
+  const width = padding * 2 + sequence.length * boxWidth + (sequence.length - 1) * gapX;
+  const height = padding * 2 + boxHeight;
+  const stroke = isHappyPath ? DIAGRAM.happyStroke : DIAGRAM.boxStroke;
+
+  const boxes = sequence
+    .map((label, idx) => {
+      const x = padding + idx * (boxWidth + gapX);
+      const displayLabel = label.length > 20 ? `${label.slice(0, 18)}…` : label;
+      return `
+        <rect x="${x}" y="${padding}" width="${boxWidth}" height="${boxHeight}" rx="2.2" fill="${DIAGRAM.boxFill}" stroke="${stroke}" stroke-width="0.9" />
+        <text x="${x + boxWidth / 2}" y="${padding + boxHeight / 2 + 1.2}" text-anchor="middle" font-family="Arial, sans-serif" font-size="3.4" font-weight="500" fill="${DIAGRAM.text}">${escapeXml(displayLabel)}</text>
+      `;
+    })
+    .join('');
+
+  const arrows = sequence
+    .slice(0, -1)
+    .map((_, idx) => {
+      const startX = padding + idx * (boxWidth + gapX) + boxWidth;
+      const endX = startX + gapX;
+      const midY = padding + boxHeight / 2;
+      return `<path d="M${startX},${midY} L${endX - 2},${midY}" stroke="${DIAGRAM.arrow}" stroke-width="0.7" marker-end="url(#pdf-arrow)" />`;
+    })
+    .join('');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <defs>
+      <marker id="pdf-arrow" markerWidth="4" markerHeight="4" refX="3" refY="1.5" orient="auto">
+        <path d="M0,0 L0,3 L3.5,1.5 z" fill="${DIAGRAM.arrow}" />
+      </marker>
+    </defs>
+    ${arrows}
+    ${boxes}
+  </svg>`;
+
+  const dataUrl = await svgToPngDataUrl(svg, width, height, 8);
+  return { dataUrl, width, height };
+}
+
 type PdfExportParams = {
   graph: ProcessGraphResponse;
   checkedVariantIndices: Set<number>;
@@ -21,10 +114,11 @@ type PdfExportParams = {
 
 /**
  * Builds and downloads a self-contained PDF report of one AI Consultant
- * session: the ProcessExplorer indicators it was based on, which process
- * variants were in scope, and the resulting RPA/AI Agent insights.
+ * session: the ProcessExplorer indicators it was based on, a small flow
+ * diagram of each process variant that was in scope, and the resulting
+ * RPA/AI Agent insights.
  */
-export function downloadAiConsultantPdf({ graph, checkedVariantIndices, result, language }: PdfExportParams): void {
+export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, result, language }: PdfExportParams): Promise<void> {
   const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(language, key, vars);
   const complexityLabel: Record<AutomationInsight['complexity'], string> = {
     low: t('ai.complexity.low'),
@@ -98,21 +192,28 @@ export function downloadAiConsultantPdf({ graph, checkedVariantIndices, result, 
     `${t('processexplorer.maxLeadTime')}: ${graph.metrics.max_lead_time_seconds != null ? formatDuration(graph.metrics.max_lead_time_seconds) : '—'}`,
   );
 
-  // Section 2: which process variants were in scope for this analysis
+  // Section 2: which process variants were in scope for this analysis - each
+  // rendered as a small flow diagram, not just plain text.
   addSectionHeading(t('pdf.selectedProcesses'));
   const checked = [...checkedVariantIndices].sort((a, b) => a - b);
   if (checked.length === 0 || graph.variants.length === 0) {
     addLine(t('pdf.noProcessesSelected'), { color: INK.faint });
   } else {
-    checked.forEach((idx) => {
+    for (const idx of checked) {
       const variant = graph.variants[idx];
-      if (!variant) return;
+      if (!variant) continue;
       const name = idx === 0 ? t('variants.happyPath') : `${t('variants.variant')} ${idx + 1}`;
       const casesLabel = variant.case_count === 1 ? t('variants.case') : t('variants.casesPlural');
       addLine(`${name} - ${variant.case_count} ${casesLabel} (${variant.percentage.toFixed(1)}%)`, { bold: true });
-      addLine(variant.sequence.join(' -> '), { color: INK.muted, size: 9.5 });
-      y += 1.5;
-    });
+
+      const diagram = await renderVariantDiagram(variant.sequence, idx === 0);
+      const displayWidth = Math.min(CONTENT_WIDTH, diagram.width);
+      const displayHeight = diagram.height * (displayWidth / diagram.width);
+
+      ensureSpace(displayHeight + 4);
+      doc.addImage(diagram.dataUrl, 'PNG', MARGIN, y, displayWidth, displayHeight);
+      y += displayHeight + 5;
+    }
   }
 
   // Section 3: the AI Consultant's insights

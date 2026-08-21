@@ -62,6 +62,7 @@ export default function AIConsultantModule({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pdfError, setPdfError] = useState('');
+  const [pdfGenerating, setPdfGenerating] = useState(false);
 
   const COMPLEXITY_LABEL: Record<AutomationInsight['complexity'], string> = {
     low: t('ai.complexity.low'),
@@ -148,14 +149,17 @@ export default function AIConsultantModule({
     }
   };
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (!graphData || !result) return;
 
     setPdfError('');
+    setPdfGenerating(true);
     try {
-      downloadAiConsultantPdf({ graph: graphData, checkedVariantIndices, result, language });
+      await downloadAiConsultantPdf({ graph: graphData, checkedVariantIndices, result, language });
     } catch (err) {
       setPdfError(err instanceof Error ? err.message : t('pdf.exportError'));
+    } finally {
+      setPdfGenerating(false);
     }
   };
 
@@ -337,7 +341,7 @@ export default function AIConsultantModule({
         <button
           type="button"
           onClick={handleExportPdf}
-          disabled={!result}
+          disabled={!result || pdfGenerating}
           title={result ? undefined : t('pdf.notReadyYet')}
           style={{
             background: 'var(--bg-surface-alt)',
@@ -346,13 +350,21 @@ export default function AIConsultantModule({
             borderRadius: '8px',
             padding: '0.75rem 1.25rem',
             fontSize: '0.9rem',
-            cursor: result ? 'pointer' : 'not-allowed',
+            cursor: result && !pdfGenerating ? 'pointer' : 'not-allowed',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.4rem',
           }}
         >
-          <IconDocument size={16} /> {t('pdf.exportButton')}
+          {pdfGenerating ? (
+            <>
+              <IconSpinner size={16} /> {t('pdf.generating')}
+            </>
+          ) : (
+            <>
+              <IconDocument size={16} /> {t('pdf.exportButton')}
+            </>
+          )}
         </button>
       </div>
       {loading && selectedEngine === 'ollama' && (
