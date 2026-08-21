@@ -7,6 +7,10 @@ import type { Language } from '../context/SettingsContext';
  */
 const dictionaries = {
   pt: {
+    // Welcome screen
+    'welcome.description': 'Descubra oportunidades de automação com Process Mining e Inteligência Artificial.',
+    'welcome.enter': 'Entrar',
+
     // Sidebar
     'sidebar.modules': 'Módulos',
     'sidebar.comingSoon': 'Em breve',
@@ -192,6 +196,10 @@ const dictionaries = {
     'settings.defaultEngineTextSuffix': ', a cada análise.',
   },
   en: {
+    // Welcome screen
+    'welcome.description': 'Discover automation opportunities with Process Mining and Artificial Intelligence.',
+    'welcome.enter': 'Enter',
+
     // Sidebar
     'sidebar.modules': 'Modules',
     'sidebar.comingSoon': 'Coming soon',

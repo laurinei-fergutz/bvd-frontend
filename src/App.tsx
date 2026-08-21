@@ -7,11 +7,13 @@ import DataMapperModule from './components/DataMapperModule';
 import ProcessExplorerModule from './components/ProcessExplorerModule';
 import AIConsultantModule from './components/AIConsultantModule';
 import SettingsModule from './components/SettingsModule';
+import WelcomeScreen from './components/WelcomeScreen';
 import { IconBot, IconFolder, IconWorkflow } from './components/Icons';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 
 function AppShell() {
   const { t } = useSettings();
+  const [showWelcome, setShowWelcome] = useState(true);
   const [activeModule, setActiveModule] = useState<ModuleId>('datamapper');
   const [mapperResult, setMapperResult] = useState<MapperUploadPreviewResponse | null>(null);
   const [graphData, setGraphData] = useState<ProcessGraphResponse | null>(null);
@@ -28,6 +30,10 @@ function AppShell() {
     setEventLogRows(rows);
     setCheckedVariantIndices(checkedVariants);
   };
+
+  if (showWelcome) {
+    return <WelcomeScreen onEnter={() => setShowWelcome(false)} />;
+  }
 
   return (
     <div
