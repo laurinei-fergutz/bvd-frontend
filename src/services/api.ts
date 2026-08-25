@@ -239,3 +239,149 @@ export async function analyzeProcess(
   return response.json();
 }
 
+export type RoiAssumptions = {
+  hourly_cost: number;
+  monthly_case_volume: number;
+  hours_per_month_per_fte: number;
+  legacy_license_monthly_cost: number;
+  ai_monthly_cost: number;
+  one_time_implementation_cost: number;
+  currency: 'BRL' | 'USD';
+};
+
+export type RoiCalculationResult = {
+  observed_bottleneck_hours: number;
+  observed_cases: number;
+  hours_lost_per_case: number;
+  efficiency_factor_pct: number;
+  efficiency_factor_estimated: boolean;
+  monthly_hours_saved: number;
+  monthly_fte_saved: number;
+  monthly_labor_savings: number;
+  monthly_license_savings: number;
+  gross_monthly_savings: number;
+  monthly_tco: number;
+  net_monthly_savings: number;
+  annual_gross_savings: number;
+  annual_tco: number;
+  net_annual_savings: number;
+  roi_percentage: number | null;
+  payback_months: number | null;
+  currency: string;
+};
+
+type RoiCalculateRequestBody = {
+  edges: Array<{ avg_duration_seconds: number | null; count: number; bottleneck: boolean }>;
+  total_cases: number;
+  insights: Array<{ estimated_efficiency_gain: string }>;
+  assumptions: RoiAssumptions;
+};
+
+function buildRoiRequestBody(
+  graph: ProcessGraphResponse,
+  insights: AutomationInsight[],
+  assumptions: RoiAssumptions,
+): RoiCalculateRequestBody {
+  return {
+    edges: graph.edges.map((e) => ({
+      avg_duration_seconds: e.avg_duration_seconds,
+      count: e.count,
+      bottleneck: e.bottleneck,
+    })),
+    total_cases: graph.metrics.total_cases,
+    insights: insights.map((i) => ({ estimated_efficiency_gain: i.estimated_efficiency_gain })),
+    assumptions,
+  };
+}
+
+async function postRoi<T>(path: string, body: RoiCalculateRequestBody): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/roi${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to calculate ROI');
+  }
+
+  return response.json();
+}
+
+export async function calculateRoi(
+  graph: ProcessGraphResponse,
+  insights: AutomationInsight[],
+  assumptions: RoiAssumptions,
+): Promise<RoiCalculationResult> {
+  return postRoi<RoiCalculationResult>('/calculate', buildRoiRequestBody(graph, insights, assumptions));
+}
+
+async function downloadRoiExport(
+  path: string,
+  graph: ProcessGraphResponse,
+  insights: AutomationInsight[],
+  assumptions: RoiAssumptions,
+  filename: string,
+): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/roi${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildRoiRequestBody(graph, insights, assumptions)),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to export ROI report');
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadRoiXlsx(
+  graph: ProcessGraphResponse,
+  insights: AutomationInsight[],
+  assumptions: RoiAssumptions,
+): Promise<void> {
+  return downloadRoiExport('/export/xlsx', graph, insights, assumptions, 'roi-business-case.xlsx');
+}
+
+export function downloadRoiCsv(
+  graph: ProcessGraphResponse,
+  insights: AutomationInsight[],
+  assumptions: RoiAssumptions,
+): Promise<void> {
+  return downloadRoiExport('/export/csv', graph, insights, assumptions, 'roi-business-case.csv');
+}
+
+export async function fetchSavedRoiAssumptions(): Promise<RoiAssumptions | null> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/roi/assumptions`);
+  if (!response.ok) {
+    throw new Error('Failed to load saved ROI assumptions');
+  }
+  return response.json();
+}
+
+export async function saveRoiAssumptions(assumptions: RoiAssumptions): Promise<RoiAssumptions> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/roi/assumptions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(assumptions),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to save ROI assumptions');
+  }
+
+  return response.json();
+}
+

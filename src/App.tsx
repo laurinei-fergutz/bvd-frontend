@@ -1,14 +1,20 @@
 import { useState } from 'react';
 
-import type { EventLogRow, MapperUploadPreviewResponse, ProcessGraphResponse } from './services/api';
+import type {
+  AnalyzeProcessResponse,
+  EventLogRow,
+  MapperUploadPreviewResponse,
+  ProcessGraphResponse,
+} from './services/api';
 import TopBar from './components/TopBar';
 import Sidebar, { type ModuleId } from './components/Sidebar';
 import DataMapperModule from './components/DataMapperModule';
 import ProcessExplorerModule from './components/ProcessExplorerModule';
 import AIConsultantModule from './components/AIConsultantModule';
+import ROIStudioModule from './components/ROIStudioModule';
 import SettingsModule from './components/SettingsModule';
 import WelcomeScreen from './components/WelcomeScreen';
-import { IconBot, IconFolder, IconWorkflow } from './components/Icons';
+import { IconBot, IconDollarSign, IconFolder, IconWorkflow } from './components/Icons';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 
 function AppShell() {
@@ -20,6 +26,8 @@ function AppShell() {
   const [eventLogRows, setEventLogRows] = useState<EventLogRow[]>([]);
   const [checkedVariantIndices, setCheckedVariantIndices] = useState<Set<number>>(new Set());
   const [aiConsultantDone, setAiConsultantDone] = useState(false);
+  const [aiResult, setAiResult] = useState<AnalyzeProcessResponse | null>(null);
+  const [roiDone, setRoiDone] = useState(false);
 
   const handleGraphGenerated = (
     graph: ProcessGraphResponse | null,
@@ -70,6 +78,12 @@ function AppShell() {
               label: t('module.aiconsultant'),
               done: aiConsultantDone,
             },
+            {
+              id: 'roistudio',
+              icon: <IconDollarSign size={16} />,
+              label: t('module.roistudio'),
+              done: roiDone,
+            },
           ]}
         />
 
@@ -88,7 +102,11 @@ function AppShell() {
               eventLogRows={eventLogRows}
               checkedVariantIndices={checkedVariantIndices}
               onProcessedChange={setAiConsultantDone}
+              onResultChange={setAiResult}
             />
+          </div>
+          <div style={{ display: activeModule === 'roistudio' ? 'block' : 'none' }}>
+            <ROIStudioModule graphData={graphData} aiResult={aiResult} onCalculatedChange={setRoiDone} />
           </div>
           <div style={{ display: activeModule === 'settings' ? 'block' : 'none' }}>
             <SettingsModule />

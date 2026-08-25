@@ -42,6 +42,7 @@ type Props = {
   eventLogRows: EventLogRow[];
   checkedVariantIndices: Set<number>;
   onProcessedChange: (done: boolean) => void;
+  onResultChange: (result: AnalyzeProcessResponse | null) => void;
 };
 
 export default function AIConsultantModule({
@@ -49,6 +50,7 @@ export default function AIConsultantModule({
   eventLogRows,
   checkedVariantIndices,
   onProcessedChange,
+  onResultChange,
 }: Props) {
   const { t, language } = useSettings();
   const [engines, setEngines] = useState<LLMEngine[]>([]);
@@ -100,6 +102,7 @@ export default function AIConsultantModule({
 
   useEffect(() => {
     onProcessedChange(result !== null);
+    onResultChange(result);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result]);
 

@@ -1,7 +1,7 @@
 import { useSettings } from '../context/SettingsContext';
-import { IconDollarSign, IconSettings, IconSliders } from './Icons';
+import { IconSettings, IconSliders } from './Icons';
 
-export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'settings';
+export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'roistudio' | 'settings';
 
 type ModuleStatus = {
   id: ModuleId;
@@ -68,10 +68,7 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
   const { t } = useSettings();
   const settingsModule: ModuleStatus = { id: 'settings', icon: <IconSettings size={16} />, label: t('sidebar.settings') };
   const doneTitle = { done: t('sidebar.processed'), notDone: t('sidebar.notProcessed') };
-  const comingSoon = [
-    { icon: <IconDollarSign size={16} />, label: t('sidebar.roiStudio') },
-    { icon: <IconSliders size={16} />, label: t('sidebar.commandCenter') },
-  ];
+  const comingSoon = [{ icon: <IconSliders size={16} />, label: t('sidebar.commandCenter') }];
 
   return (
     <nav
