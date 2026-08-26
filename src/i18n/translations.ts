@@ -26,7 +26,7 @@ const dictionaries = {
     // DataMapper
     'datamapper.invalidFile': 'Por favor, selecione um arquivo CSV, Excel (.xlsx), log (.log) ou XES (.xes)',
     'datamapper.uploadError': 'Erro ao enviar arquivo',
-    'datamapper.title': 'Module 0: DataMapper',
+    'datamapper.title': 'DataMapper',
     'datamapper.subtitle': 'A porta de entrada inteligente: envie seus dados e veja o schema inferido.',
     'datamapper.processing': 'Processando arquivo...',
     'datamapper.dragPrompt': 'Arraste um arquivo CSV, Excel (.xlsx), log (.log) ou XES (.xes) aqui',
@@ -55,7 +55,7 @@ const dictionaries = {
     'processexplorer.noRowsAfterFilters': 'Nenhuma linha restante depois de aplicar os filtros - ajuste os critérios',
     'processexplorer.graphError': 'Erro ao gerar grafo do processo',
     'processexplorer.exportError': 'Erro ao exportar imagem do grafo',
-    'processexplorer.title': 'Module 1: ProcessExplorer',
+    'processexplorer.title': 'ProcessExplorer',
     'processexplorer.locked': 'Módulo bloqueado',
     'processexplorer.lockedMessagePrefix': 'Envie um arquivo no',
     'processexplorer.lockedMessageSuffix': 'primeiro para desbloquear o mapeamento de colunas e o grafo do processo.',
@@ -128,7 +128,7 @@ const dictionaries = {
     'ai.selectVariant': 'Selecione ao menos uma variante do processo no ProcessExplorer antes de gerar os insights.',
     'ai.noMatchingCases': 'Nenhum caso corresponde às variantes selecionadas - ajuste a seleção no ProcessExplorer.',
     'ai.generateError': 'Erro ao gerar insights',
-    'ai.title': 'Module 2: AI Process Consultant',
+    'ai.title': 'AI Process Consultant',
     'ai.locked': 'Módulo bloqueado',
     'ai.lockedMessagePrefix': 'Gere um grafo no',
     'ai.lockedMessageSuffix': 'primeiro - o consultor de IA analisa as variantes, gargalos e métricas de lá.',
@@ -178,7 +178,7 @@ const dictionaries = {
     'pdf.page': 'Página',
 
     // ROI & Value Studio
-    'roi.title': 'Module 3: ROI & Value Studio',
+    'roi.title': 'ROI & Value Studio',
     'roi.subtitle':
       'O cérebro financeiro da plataforma: cruza os gargalos do ProcessExplorer, as recomendações do AI Consultant e os custos da empresa para calcular o retorno sobre o investimento.',
     'roi.locked': 'Módulo bloqueado',
@@ -189,8 +189,8 @@ const dictionaries = {
     'roi.hourlyCost': 'Custo médio por hora (FTE)',
     'roi.monthlyCaseVolume': 'Volume mensal de casos do processo',
     'roi.hoursPerMonthPerFte': 'Horas trabalhadas por mês (por FTE)',
-    'roi.legacyLicenseCost': 'Custo mensal de licenças legadas a descontinuar',
-    'roi.aiMonthlyCost': 'Custo mensal da automação (tokens de IA + infraestrutura)',
+    'roi.legacyLicenseCost': 'Licenças legadas (mensal)',
+    'roi.aiMonthlyCost': 'Automação: IA + infra (mensal)',
     'roi.implementationCost': 'Custo único de implementação',
     'roi.currency': 'Moeda',
     'roi.calculate': 'Calcular ROI',
@@ -275,7 +275,7 @@ const dictionaries = {
     // DataMapper
     'datamapper.invalidFile': 'Please select a CSV, Excel (.xlsx), log (.log) or XES (.xes) file',
     'datamapper.uploadError': 'Error uploading file',
-    'datamapper.title': 'Module 0: DataMapper',
+    'datamapper.title': 'DataMapper',
     'datamapper.subtitle': 'The smart entry point: upload your data and see the inferred schema.',
     'datamapper.processing': 'Processing file...',
     'datamapper.dragPrompt': 'Drag a CSV, Excel (.xlsx), log (.log) or XES (.xes) file here',
@@ -303,7 +303,7 @@ const dictionaries = {
     'processexplorer.noRowsAfterFilters': 'No rows left after applying the filters - adjust the criteria',
     'processexplorer.graphError': 'Error generating process graph',
     'processexplorer.exportError': 'Error exporting graph image',
-    'processexplorer.title': 'Module 1: ProcessExplorer',
+    'processexplorer.title': 'ProcessExplorer',
     'processexplorer.locked': 'Module locked',
     'processexplorer.lockedMessagePrefix': 'Upload a file in',
     'processexplorer.lockedMessageSuffix': 'first to unlock column mapping and the process graph.',
@@ -375,7 +375,7 @@ const dictionaries = {
     'ai.selectVariant': 'Select at least one process variant in ProcessExplorer before generating insights.',
     'ai.noMatchingCases': 'No cases match the selected variants - adjust the selection in ProcessExplorer.',
     'ai.generateError': 'Error generating insights',
-    'ai.title': 'Module 2: AI Process Consultant',
+    'ai.title': 'AI Process Consultant',
     'ai.locked': 'Module locked',
     'ai.lockedMessagePrefix': 'Generate a graph in',
     'ai.lockedMessageSuffix': 'first - the AI consultant analyzes the variants, bottlenecks and metrics from there.',
@@ -425,7 +425,7 @@ const dictionaries = {
     'pdf.page': 'Page',
 
     // ROI & Value Studio
-    'roi.title': 'Module 3: ROI & Value Studio',
+    'roi.title': 'ROI & Value Studio',
     'roi.subtitle':
       "The platform's financial brain: cross-references ProcessExplorer's bottlenecks, the AI Consultant's recommendations, and the company's costs to calculate return on investment.",
     'roi.locked': 'Module locked',
@@ -436,8 +436,8 @@ const dictionaries = {
     'roi.hourlyCost': 'Average hourly cost (FTE)',
     'roi.monthlyCaseVolume': 'Monthly process case volume',
     'roi.hoursPerMonthPerFte': 'Hours worked per month (per FTE)',
-    'roi.legacyLicenseCost': 'Monthly cost of legacy licenses to retire',
-    'roi.aiMonthlyCost': 'Monthly automation cost (AI tokens + infrastructure)',
+    'roi.legacyLicenseCost': 'Legacy licenses (monthly)',
+    'roi.aiMonthlyCost': 'Automation: AI + infra (monthly)',
     'roi.implementationCost': 'One-time implementation cost',
     'roi.currency': 'Currency',
     'roi.calculate': 'Calculate ROI',

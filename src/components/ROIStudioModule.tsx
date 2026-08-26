@@ -34,20 +34,34 @@ const DEFAULT_ASSUMPTIONS: RoiAssumptions = {
   currency: 'BRL',
 };
 
+const cardStyle: React.CSSProperties = {
+  background: 'var(--bg-surface)',
+  border: '1px solid var(--border)',
+  borderRadius: '10px',
+  padding: '1.5rem',
+};
+
+const responsiveGrid: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+  gap: '1.25rem',
+};
+
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '0.5rem',
   borderRadius: '6px',
   border: '1px solid var(--border)',
-  background: 'var(--bg-surface)',
+  background: 'var(--bg-surface-alt)',
   color: 'var(--text-primary)',
 };
 
 const labelStyle: React.CSSProperties = {
   color: 'var(--text-secondary)',
-  fontSize: '0.875rem',
+  fontSize: '0.8rem',
   display: 'block',
-  marginBottom: '0.25rem',
+  marginBottom: '0.35rem',
+  minHeight: '2.2em',
 };
 
 const buttonStyle: React.CSSProperties = {
@@ -171,7 +185,7 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
           style={{
             background: 'var(--bg-surface)',
             border: '1px dashed var(--border)',
-            borderRadius: '8px',
+            borderRadius: '10px',
             padding: '2rem',
             textAlign: 'center',
             color: 'var(--text-secondary)',
@@ -189,7 +203,7 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
           >
             <IconLock size={18} /> {t('roi.locked')}
           </p>
-          <p>{t('roi.lockedMessage')}</p>
+          <p style={{ margin: 0 }}>{t('roi.lockedMessage')}</p>
         </div>
       </div>
     );
@@ -207,13 +221,13 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
       </h2>
       <p style={{ color: 'var(--text-secondary)' }}>{t('roi.subtitle')}</p>
 
-      <section style={{ marginTop: '1.5rem' }}>
-        <h3 style={{ marginBottom: '0.25rem' }}>{t('roi.assumptionsTitle')}</h3>
-        <p style={{ color: 'var(--text-secondary)', marginTop: 0, fontSize: '0.85rem' }}>
+      <section style={{ ...cardStyle, marginTop: '1.5rem' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '0.25rem' }}>{t('roi.assumptionsTitle')}</h3>
+        <p style={{ color: 'var(--text-secondary)', marginTop: 0, marginBottom: '1.25rem', fontSize: '0.85rem' }}>
           {t('roi.assumptionsSubtitle')}
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem' }}>
+        <div style={responsiveGrid}>
           <div>
             <label style={labelStyle}>{t('roi.hourlyCost')}</label>
             <input type="number" min={0} value={assumptions.hourly_cost} onChange={updateField('hourly_cost')} style={inputStyle} />
@@ -237,13 +251,6 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
               onChange={updateField('hours_per_month_per_fte')}
               style={inputStyle}
             />
-          </div>
-          <div>
-            <label style={labelStyle}>{t('roi.currency')}</label>
-            <select value={assumptions.currency} onChange={updateField('currency')} style={inputStyle}>
-              <option value="BRL">BRL (R$)</option>
-              <option value="USD">USD ($)</option>
-            </select>
           </div>
           <div>
             <label style={labelStyle}>{t('roi.legacyLicenseCost')}</label>
@@ -275,9 +282,16 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
               style={inputStyle}
             />
           </div>
+          <div>
+            <label style={labelStyle}>{t('roi.currency')}</label>
+            <select value={assumptions.currency} onChange={updateField('currency')} style={inputStyle}>
+              <option value="BRL">BRL (R$)</option>
+              <option value="USD">USD ($)</option>
+            </select>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.25rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem' }}>
           <button
             type="button"
             onClick={handleCalculate}
@@ -306,18 +320,18 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
           </button>
         </div>
 
-        {saveMessage && <p style={{ color: 'var(--accent-green)', fontSize: '0.85rem', marginTop: '0.5rem' }}>{saveMessage}</p>}
-        {saveError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.5rem' }}>{saveError}</p>}
+        {saveMessage && <p style={{ color: 'var(--accent-green)', fontSize: '0.85rem', marginTop: '0.75rem', marginBottom: 0 }}>{saveMessage}</p>}
+        {saveError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.75rem', marginBottom: 0 }}>{saveError}</p>}
         {calculateError && (
-          <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.5rem' }}>{calculateError}</p>
+          <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.75rem', marginBottom: 0 }}>{calculateError}</p>
         )}
       </section>
 
       {result && (
-        <section style={{ marginTop: '2.5rem' }}>
+        <section style={{ marginTop: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>{t('roi.results')}</h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ ...responsiveGrid, marginBottom: '1.25rem' }}>
             <StatCard label={t('roi.fteSaved')} value={result.monthly_fte_saved.toFixed(2)} />
             <StatCard
               label={t('roi.monthlyNetSavings')}
@@ -333,12 +347,16 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div style={{ ...responsiveGrid, marginBottom: '1.5rem' }}>
             <StatCard
               label={t('roi.payback')}
               value={result.payback_months != null ? `${result.payback_months.toFixed(1)} ${t('roi.months')}` : t('roi.notApplicable')}
             />
-            <StatCard label={t('roi.basedOnBottleneckHours')} value={formatDuration(result.observed_bottleneck_hours * 3600)} hint={`${result.observed_cases} ${t('roi.observedCases')}`} />
+            <StatCard
+              label={t('roi.basedOnBottleneckHours')}
+              value={formatDuration(result.observed_bottleneck_hours * 3600)}
+              hint={`${result.observed_cases} ${t('roi.observedCases')}`}
+            />
             <StatCard
               label={t('roi.efficiencyFactor')}
               value={`${result.efficiency_factor_pct.toFixed(0)}%`}
@@ -346,8 +364,8 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
             />
           </div>
 
-          <div style={{ marginBottom: '2rem' }}>
-            <h4 style={{ marginBottom: '0.75rem' }}>{t('roi.costComparison')}</h4>
+          <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
+            <h4 style={{ marginTop: 0, marginBottom: '1rem' }}>{t('roi.costComparison')}</h4>
             <CostBar
               label={t('roi.currentCost')}
               value={currentMonthlyCost}
@@ -361,6 +379,7 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
               max={maxBarCost}
               color="var(--accent-green)"
               display={formatCurrency(projectedMonthlyCost, result.currency, locale)}
+              last
             />
           </div>
 
@@ -376,14 +395,15 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
         </section>
       )}
 
-      <section style={{ marginTop: '2.5rem' }}>
-        <h3 style={{ marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <section style={{ ...cardStyle, marginTop: '2rem', background: 'var(--bg-surface-alt)' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <IconTarget size={16} /> {t('roi.integrationsTitle')}
         </h3>
         <p
           style={{
             color: 'var(--text-tertiary)',
             fontSize: '0.85rem',
+            margin: 0,
             maxWidth: '640px',
             display: 'flex',
             alignItems: 'flex-start',
@@ -400,23 +420,37 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
 
 function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.85rem 1rem' }}>
+    <div style={{ background: 'var(--bg-surface-alt)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.85rem 1rem' }}>
       <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.8rem' }}>{label}</p>
-      <p style={{ fontWeight: 'bold', fontSize: '1.25rem', margin: '0.15rem 0 0' }}>{value}</p>
+      <p style={{ fontWeight: 'bold', fontSize: '1.25rem', margin: '0.15rem 0 0', wordBreak: 'break-word' }}>{value}</p>
       {hint && <p style={{ color: 'var(--text-tertiary)', margin: 0, fontSize: '0.7rem' }}>{hint}</p>}
     </div>
   );
 }
 
-function CostBar({ label, value, max, color, display }: { label: string; value: number; max: number; color: string; display: string }) {
+function CostBar({
+  label,
+  value,
+  max,
+  color,
+  display,
+  last,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  color: string;
+  display: string;
+  last?: boolean;
+}) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div style={{ marginBottom: '0.75rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+    <div style={{ marginBottom: last ? 0 : '0.85rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>
         <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
         <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{display}</span>
       </div>
-      <div style={{ height: '10px', borderRadius: '5px', background: 'var(--bg-surface-alt)', overflow: 'hidden' }}>
+      <div style={{ height: '10px', borderRadius: '5px', background: 'var(--bg-surface)', overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${pct}%`, background: color, transition: 'width 0.4s ease' }} />
       </div>
     </div>
