@@ -47,9 +47,18 @@ const responsiveGrid: React.CSSProperties = {
   gap: '1.25rem',
 };
 
+// Narrower, capped-width columns for the assumptions form - these hold a
+// handful of digits each, so they shouldn't stretch to fill the card.
+const assumptionsGrid: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 160px))',
+  gap: '1.25rem 1.5rem',
+};
+
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.5rem',
+  maxWidth: '160px',
+  padding: '0.4rem 0.55rem',
   borderRadius: '6px',
   border: '1px solid var(--border)',
   background: 'var(--bg-surface-alt)',
@@ -227,7 +236,7 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
           {t('roi.assumptionsSubtitle')}
         </p>
 
-        <div style={responsiveGrid}>
+        <div style={assumptionsGrid}>
           <div>
             <label style={labelStyle}>{t('roi.hourlyCost')}</label>
             <input type="number" min={0} value={assumptions.hourly_cost} onChange={updateField('hourly_cost')} style={inputStyle} />
