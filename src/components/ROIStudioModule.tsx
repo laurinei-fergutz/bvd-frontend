@@ -29,9 +29,20 @@ const DEFAULT_ASSUMPTIONS: RoiAssumptions = {
   monthly_case_volume: 200,
   hours_per_month_per_fte: 160,
   legacy_license_monthly_cost: 0,
-  ai_monthly_cost: 150,
+  ai_monthly_cost: 50,
   one_time_implementation_cost: 0,
   currency: 'BRL',
+  avg_tokens_per_transaction: 1500,
+  cost_per_million_tokens_small_model: 1.5,
+  cost_per_million_tokens_advanced_model: 8,
+  small_model_token_share_pct: 70,
+  compute_overhead_pct: 20,
+  discount_rate_pct: 12,
+  time_horizon_years: 2,
+  exception_rate_pct: 5,
+  exception_handling_cost: 10,
+  peak_monthly_case_volume: 0,
+  peak_monthly_tco_estimate: 0,
 };
 
 const cardStyle: React.CSSProperties = {
@@ -41,15 +52,15 @@ const cardStyle: React.CSSProperties = {
   padding: '1.5rem',
 };
 
-const responsiveGrid: React.CSSProperties = {
+const statGrid: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
   gap: '1.25rem',
 };
 
-// Narrower, capped-width columns for the assumptions form - these hold a
+// Narrower, capped-width columns for assumption inputs - these hold a
 // handful of digits each, so they shouldn't stretch to fill the card.
-const assumptionsGrid: React.CSSProperties = {
+const inputGrid: React.CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 160px))',
   gap: '1.25rem 1.5rem',
@@ -86,12 +97,53 @@ const buttonStyle: React.CSSProperties = {
   gap: '0.4rem',
 };
 
+const sectionTitleStyle: React.CSSProperties = { marginTop: 0, marginBottom: '0.25rem' };
+const sectionSubtitleStyle: React.CSSProperties = {
+  color: 'var(--text-secondary)',
+  marginTop: 0,
+  marginBottom: '1.25rem',
+  fontSize: '0.85rem',
+};
+
 function formatCurrency(value: number, currency: string, locale: string): string {
   try {
     return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
   } catch {
     return `${currency} ${value.toFixed(0)}`;
   }
+}
+
+function formatCurrencyPrecise(value: number, currency: string, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 4 }).format(value);
+  } catch {
+    return `${currency} ${value.toFixed(4)}`;
+  }
+}
+
+type Field = { key: keyof RoiAssumptions; label: string; min?: number };
+
+function NumberField({
+  field,
+  assumptions,
+  onChange,
+}: {
+  field: Field;
+  assumptions: RoiAssumptions;
+  onChange: (field: keyof RoiAssumptions) => (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div>
+      <label style={labelStyle}>{field.label}</label>
+      <input
+        type="number"
+        min={field.min ?? 0}
+        value={assumptions[field.key] as number}
+        onChange={onChange(field.key)}
+        style={inputStyle}
+      />
+    </div>
+  );
 }
 
 type Props = {
@@ -222,6 +274,36 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
   const currentMonthlyCost = result ? result.hours_lost_per_case * assumptions.monthly_case_volume * assumptions.hourly_cost : 0;
   const projectedMonthlyCost = result ? currentMonthlyCost - result.monthly_labor_savings + result.monthly_tco : 0;
   const maxBarCost = Math.max(currentMonthlyCost, projectedMonthlyCost, 1);
+  const maxCptCost = result ? Math.max(result.cost_per_transaction_manual, result.cost_per_transaction_automated, 0.0001) : 1;
+
+  const operationalFields: Field[] = [
+    { key: 'hourly_cost', label: t('roi.hourlyCost') },
+    { key: 'monthly_case_volume', label: t('roi.monthlyCaseVolume') },
+    { key: 'hours_per_month_per_fte', label: t('roi.hoursPerMonthPerFte'), min: 1 },
+    { key: 'legacy_license_monthly_cost', label: t('roi.legacyLicenseCost') },
+    { key: 'ai_monthly_cost', label: t('roi.aiMonthlyCost') },
+    { key: 'one_time_implementation_cost', label: t('roi.implementationCost') },
+  ];
+
+  const unitEconomicsFields: Field[] = [
+    { key: 'avg_tokens_per_transaction', label: t('roi.avgTokensPerTransaction') },
+    { key: 'cost_per_million_tokens_small_model', label: t('roi.costPerMillionSmall') },
+    { key: 'cost_per_million_tokens_advanced_model', label: t('roi.costPerMillionAdvanced') },
+    { key: 'small_model_token_share_pct', label: t('roi.smallModelShare') },
+    { key: 'compute_overhead_pct', label: t('roi.computeOverheadPct') },
+  ];
+
+  const advancedFinancialFields: Field[] = [
+    { key: 'discount_rate_pct', label: t('roi.discountRate') },
+    { key: 'time_horizon_years', label: t('roi.timeHorizon'), min: 1 },
+  ];
+
+  const riskFields: Field[] = [
+    { key: 'exception_rate_pct', label: t('roi.exceptionRate') },
+    { key: 'exception_handling_cost', label: t('roi.exceptionCost') },
+    { key: 'peak_monthly_case_volume', label: t('roi.peakVolume') },
+    { key: 'peak_monthly_tco_estimate', label: t('roi.peakTco') },
+  ];
 
   return (
     <div>
@@ -230,150 +312,121 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
       </h2>
       <p style={{ color: 'var(--text-secondary)' }}>{t('roi.subtitle')}</p>
 
-      <section style={{ ...cardStyle, marginTop: '1.5rem' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '0.25rem' }}>{t('roi.assumptionsTitle')}</h3>
-        <p style={{ color: 'var(--text-secondary)', marginTop: 0, marginBottom: '1.25rem', fontSize: '0.85rem' }}>
-          {t('roi.assumptionsSubtitle')}
-        </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1.5rem' }}>
+        <section style={cardStyle}>
+          <h3 style={sectionTitleStyle}>{t('roi.assumptionsTitle')}</h3>
+          <p style={sectionSubtitleStyle}>{t('roi.assumptionsSubtitle')}</p>
+          <div style={inputGrid}>
+            {operationalFields.map((field) => (
+              <NumberField key={field.key} field={field} assumptions={assumptions} onChange={updateField} />
+            ))}
+            <div>
+              <label style={labelStyle}>{t('roi.currency')}</label>
+              <select value={assumptions.currency} onChange={updateField('currency')} style={inputStyle}>
+                <option value="BRL">BRL (R$)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+            </div>
+          </div>
+        </section>
 
-        <div style={assumptionsGrid}>
-          <div>
-            <label style={labelStyle}>{t('roi.hourlyCost')}</label>
-            <input type="number" min={0} value={assumptions.hourly_cost} onChange={updateField('hourly_cost')} style={inputStyle} />
+        <section style={cardStyle}>
+          <h3 style={sectionTitleStyle}>{t('roi.section.unitEconomics')}</h3>
+          <div style={inputGrid}>
+            {unitEconomicsFields.map((field) => (
+              <NumberField key={field.key} field={field} assumptions={assumptions} onChange={updateField} />
+            ))}
           </div>
-          <div>
-            <label style={labelStyle}>{t('roi.monthlyCaseVolume')}</label>
-            <input
-              type="number"
-              min={0}
-              value={assumptions.monthly_case_volume}
-              onChange={updateField('monthly_case_volume')}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>{t('roi.hoursPerMonthPerFte')}</label>
-            <input
-              type="number"
-              min={1}
-              value={assumptions.hours_per_month_per_fte}
-              onChange={updateField('hours_per_month_per_fte')}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>{t('roi.legacyLicenseCost')}</label>
-            <input
-              type="number"
-              min={0}
-              value={assumptions.legacy_license_monthly_cost}
-              onChange={updateField('legacy_license_monthly_cost')}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>{t('roi.aiMonthlyCost')}</label>
-            <input
-              type="number"
-              min={0}
-              value={assumptions.ai_monthly_cost}
-              onChange={updateField('ai_monthly_cost')}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>{t('roi.implementationCost')}</label>
-            <input
-              type="number"
-              min={0}
-              value={assumptions.one_time_implementation_cost}
-              onChange={updateField('one_time_implementation_cost')}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>{t('roi.currency')}</label>
-            <select value={assumptions.currency} onChange={updateField('currency')} style={inputStyle}>
-              <option value="BRL">BRL (R$)</option>
-              <option value="USD">USD ($)</option>
-            </select>
-          </div>
-        </div>
+        </section>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem' }}>
-          <button
-            type="button"
-            onClick={handleCalculate}
-            disabled={calculating}
-            style={{
-              ...buttonStyle,
-              background: calculating ? 'var(--muted)' : 'var(--accent-purple)',
-              color: 'white',
-              border: 'none',
-              fontWeight: 'bold',
-              cursor: calculating ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {calculating ? (
-              <>
-                <IconSpinner size={16} /> {t('roi.calculating')}
-              </>
-            ) : (
-              <>
-                <IconTrendingUp size={16} /> {t('roi.calculate')}
-              </>
-            )}
-          </button>
-          <button type="button" onClick={handleSaveAssumptions} disabled={saving} style={buttonStyle}>
-            <IconSave size={15} /> {saving ? t('roi.savingAssumptions') : t('roi.saveAssumptions')}
-          </button>
-        </div>
+        <section style={cardStyle}>
+          <h3 style={sectionTitleStyle}>{t('roi.section.advancedFinancial')}</h3>
+          <div style={inputGrid}>
+            {advancedFinancialFields.map((field) => (
+              <NumberField key={field.key} field={field} assumptions={assumptions} onChange={updateField} />
+            ))}
+          </div>
+        </section>
 
-        {saveMessage && <p style={{ color: 'var(--accent-green)', fontSize: '0.85rem', marginTop: '0.75rem', marginBottom: 0 }}>{saveMessage}</p>}
-        {saveError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.75rem', marginBottom: 0 }}>{saveError}</p>}
-        {calculateError && (
-          <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.75rem', marginBottom: 0 }}>{calculateError}</p>
-        )}
-      </section>
+        <section style={cardStyle}>
+          <h3 style={sectionTitleStyle}>{t('roi.section.risk')}</h3>
+          <div style={inputGrid}>
+            {riskFields.map((field) => (
+              <NumberField key={field.key} field={field} assumptions={assumptions} onChange={updateField} />
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1.5rem' }}>
+        <button
+          type="button"
+          onClick={handleCalculate}
+          disabled={calculating}
+          style={{
+            ...buttonStyle,
+            background: calculating ? 'var(--muted)' : 'var(--accent-purple)',
+            color: 'white',
+            border: 'none',
+            fontWeight: 'bold',
+            cursor: calculating ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {calculating ? (
+            <>
+              <IconSpinner size={16} /> {t('roi.calculating')}
+            </>
+          ) : (
+            <>
+              <IconTrendingUp size={16} /> {t('roi.calculate')}
+            </>
+          )}
+        </button>
+        <button type="button" onClick={handleSaveAssumptions} disabled={saving} style={buttonStyle}>
+          <IconSave size={15} /> {saving ? t('roi.savingAssumptions') : t('roi.saveAssumptions')}
+        </button>
+      </div>
+
+      {saveMessage && <p style={{ color: 'var(--accent-green)', fontSize: '0.85rem', marginTop: '0.75rem' }}>{saveMessage}</p>}
+      {saveError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.75rem' }}>{saveError}</p>}
+      {calculateError && (
+        <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.75rem' }}>{calculateError}</p>
+      )}
 
       {result && (
-        <section style={{ marginTop: '2rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>{t('roi.results')}</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2rem' }}>
+          <section>
+            <h3 style={{ marginBottom: '1rem' }}>{t('roi.results')}</h3>
+            <div style={{ ...statGrid, marginBottom: '1.25rem' }}>
+              <StatCard label={t('roi.fteSaved')} value={result.monthly_fte_saved.toFixed(2)} />
+              <StatCard
+                label={t('roi.monthlyNetSavings')}
+                value={formatCurrency(result.net_monthly_savings, result.currency, locale)}
+              />
+              <StatCard
+                label={t('roi.annualNetSavings')}
+                value={formatCurrency(result.net_annual_savings, result.currency, locale)}
+              />
+              <StatCard
+                label={t('roi.roiPercentage')}
+                value={result.roi_percentage != null ? `${result.roi_percentage.toFixed(0)}%` : t('roi.notApplicable')}
+              />
+            </div>
+            <div style={statGrid}>
+              <StatCard
+                label={t('roi.basedOnBottleneckHours')}
+                value={formatDuration(result.observed_bottleneck_hours * 3600)}
+                hint={`${result.observed_cases} ${t('roi.observedCases')}`}
+              />
+              <StatCard
+                label={t('roi.efficiencyFactor')}
+                value={`${result.efficiency_factor_pct.toFixed(0)}%`}
+                hint={result.efficiency_factor_estimated ? t('roi.efficiencyFactorEstimatedNote') : undefined}
+              />
+            </div>
+          </section>
 
-          <div style={{ ...responsiveGrid, marginBottom: '1.25rem' }}>
-            <StatCard label={t('roi.fteSaved')} value={result.monthly_fte_saved.toFixed(2)} />
-            <StatCard
-              label={t('roi.monthlyNetSavings')}
-              value={formatCurrency(result.net_monthly_savings, result.currency, locale)}
-            />
-            <StatCard
-              label={t('roi.annualNetSavings')}
-              value={formatCurrency(result.net_annual_savings, result.currency, locale)}
-            />
-            <StatCard
-              label={t('roi.roiPercentage')}
-              value={result.roi_percentage != null ? `${result.roi_percentage.toFixed(0)}%` : t('roi.notApplicable')}
-            />
-          </div>
-
-          <div style={{ ...responsiveGrid, marginBottom: '1.5rem' }}>
-            <StatCard
-              label={t('roi.payback')}
-              value={result.payback_months != null ? `${result.payback_months.toFixed(1)} ${t('roi.months')}` : t('roi.notApplicable')}
-            />
-            <StatCard
-              label={t('roi.basedOnBottleneckHours')}
-              value={formatDuration(result.observed_bottleneck_hours * 3600)}
-              hint={`${result.observed_cases} ${t('roi.observedCases')}`}
-            />
-            <StatCard
-              label={t('roi.efficiencyFactor')}
-              value={`${result.efficiency_factor_pct.toFixed(0)}%`}
-              hint={result.efficiency_factor_estimated ? t('roi.efficiencyFactorEstimatedNote') : undefined}
-            />
-          </div>
-
-          <div style={{ ...cardStyle, marginBottom: '1.5rem' }}>
+          <section style={cardStyle}>
             <h4 style={{ marginTop: 0, marginBottom: '1rem' }}>{t('roi.costComparison')}</h4>
             <CostBar
               label={t('roi.currentCost')}
@@ -390,18 +443,96 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
               display={formatCurrency(projectedMonthlyCost, result.currency, locale)}
               last
             />
-          </div>
+          </section>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <section>
+            <h3 style={{ marginBottom: '1rem' }}>{t('roi.results.unitEconomics')}</h3>
+            <div style={{ ...statGrid, marginBottom: '1.25rem' }}>
+              <StatCard
+                label={t('roi.blendedTokenCost')}
+                value={formatCurrencyPrecise(result.blended_cost_per_million_tokens, result.currency, locale)}
+              />
+              <StatCard
+                label={t('roi.monthlyTokenCost')}
+                value={formatCurrency(result.monthly_token_cost, result.currency, locale)}
+              />
+              <StatCard
+                label={t('roi.monthlyInfraOverhead')}
+                value={formatCurrency(result.monthly_infra_overhead_cost, result.currency, locale)}
+              />
+              <StatCard
+                label={t('roi.monthlyAiRunningCost')}
+                value={formatCurrency(result.monthly_ai_running_cost, result.currency, locale)}
+              />
+            </div>
+            <div style={cardStyle}>
+              <h4 style={{ marginTop: 0, marginBottom: '1rem' }}>{t('roi.cptComparison')}</h4>
+              <CostBar
+                label={t('roi.cptManual')}
+                value={result.cost_per_transaction_manual}
+                max={maxCptCost}
+                color="var(--danger-light)"
+                display={formatCurrencyPrecise(result.cost_per_transaction_manual, result.currency, locale)}
+              />
+              <CostBar
+                label={t('roi.cptAutomated')}
+                value={result.cost_per_transaction_automated}
+                max={maxCptCost}
+                color="var(--accent-green)"
+                display={formatCurrencyPrecise(result.cost_per_transaction_automated, result.currency, locale)}
+                last
+              />
+            </div>
+          </section>
+
+          <section>
+            <h3 style={{ marginBottom: '1rem' }}>{t('roi.results.advancedFinancial')}</h3>
+            <div style={statGrid}>
+              <StatCard
+                label={t('roi.payback')}
+                value={
+                  result.payback_months != null ? `${result.payback_months.toFixed(1)} ${t('roi.months')}` : t('roi.notApplicable')
+                }
+              />
+              <StatCard label={t('roi.npv')} value={result.npv != null ? formatCurrency(result.npv, result.currency, locale) : t('roi.notApplicable')} />
+              <StatCard
+                label={t('roi.irr')}
+                value={result.irr_percentage != null ? `${result.irr_percentage.toFixed(0)}%` : t('roi.notApplicable')}
+              />
+            </div>
+          </section>
+
+          <section>
+            <h3 style={{ marginBottom: '1rem' }}>{t('roi.results.risk')}</h3>
+            <div style={statGrid}>
+              <StatCard
+                label={t('roi.exceptionCostMonthly')}
+                value={formatCurrency(result.monthly_exception_cost, result.currency, locale)}
+              />
+              <StatCard
+                label={t('roi.exceptionCostRatio')}
+                value={
+                  result.exception_cost_ratio_pct != null ? `${result.exception_cost_ratio_pct.toFixed(1)}%` : t('roi.notApplicable')
+                }
+              />
+              <StatCard
+                label={t('roi.costScalingFactor')}
+                value={result.cost_scaling_factor != null ? result.cost_scaling_factor.toFixed(2) : t('roi.notApplicable')}
+                hint={t('roi.costScalingHint')}
+              />
+            </div>
+          </section>
+
+          <section style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             <button type="button" onClick={() => handleExport('xlsx')} disabled={exportingXlsx} style={buttonStyle}>
               {exportingXlsx ? <IconSpinner size={15} /> : <IconDocument size={15} />} {t('roi.exportXlsx')}
             </button>
             <button type="button" onClick={() => handleExport('csv')} disabled={exportingCsv} style={buttonStyle}>
               {exportingCsv ? <IconSpinner size={15} /> : <IconDocument size={15} />} {t('roi.exportCsv')}
             </button>
-          </div>
-          {exportError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem', marginTop: '0.5rem' }}>{exportError}</p>}
-        </section>
+          </section>
+          {exportError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem' }}>{exportError}</p>}
+        </div>
       )}
 
       <section style={{ ...cardStyle, marginTop: '2rem', background: 'var(--bg-surface-alt)' }}>
@@ -452,7 +583,11 @@ function CostBar({
   display: string;
   last?: boolean;
 }) {
-  const pct = Math.max(0, Math.min(100, (value / max) * 100));
+  // Clamp to a visible sliver when the value is nonzero but tiny relative
+  // to `max` (e.g. automated cost-per-transaction next to a manual one two
+  // orders of magnitude larger) - otherwise the bar looks broken/empty.
+  const rawPct = Math.max(0, Math.min(100, (value / max) * 100));
+  const pct = value > 0 ? Math.max(rawPct, 1.5) : rawPct;
   return (
     <div style={{ marginBottom: last ? 0 : '0.85rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.3rem' }}>

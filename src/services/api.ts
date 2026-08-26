@@ -247,6 +247,20 @@ export type RoiAssumptions = {
   ai_monthly_cost: number;
   one_time_implementation_cost: number;
   currency: 'BRL' | 'USD';
+  // Unit economics / AI token cost
+  avg_tokens_per_transaction: number;
+  cost_per_million_tokens_small_model: number;
+  cost_per_million_tokens_advanced_model: number;
+  small_model_token_share_pct: number;
+  compute_overhead_pct: number;
+  // Advanced financials (NPV/IRR)
+  discount_rate_pct: number;
+  time_horizon_years: number;
+  // Risk / scalability
+  exception_rate_pct: number;
+  exception_handling_cost: number;
+  peak_monthly_case_volume: number;
+  peak_monthly_tco_estimate: number;
 };
 
 export type RoiCalculationResult = {
@@ -268,6 +282,20 @@ export type RoiCalculationResult = {
   roi_percentage: number | null;
   payback_months: number | null;
   currency: string;
+  // Unit economics
+  blended_cost_per_million_tokens: number;
+  monthly_token_cost: number;
+  monthly_infra_overhead_cost: number;
+  monthly_ai_running_cost: number;
+  cost_per_transaction_automated: number;
+  cost_per_transaction_manual: number;
+  // Advanced financials
+  npv: number | null;
+  irr_percentage: number | null;
+  // Risk / scalability
+  monthly_exception_cost: number;
+  exception_cost_ratio_pct: number | null;
+  cost_scaling_factor: number | null;
 };
 
 type RoiCalculateRequestBody = {
