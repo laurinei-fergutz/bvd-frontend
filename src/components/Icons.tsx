@@ -335,6 +335,14 @@ export function IconGlobe(props: IconProps) {
   );
 }
 
+export function IconActivity(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 12h4l2.5-7 4 14 2.5-7H21" />
+    </Svg>
+  );
+}
+
 export function IconSpinner(props: IconProps) {
   const { size = 18, color = 'currentColor', strokeWidth = 1.8, style } = props;
   return (

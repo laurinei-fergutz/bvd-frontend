@@ -413,3 +413,59 @@ export async function saveRoiAssumptions(assumptions: RoiAssumptions): Promise<R
   return response.json();
 }
 
+export type PerfEvent = {
+  timestamp: string;
+  module: string;
+  operation: string;
+  method: string;
+  path: string;
+  duration_ms: number;
+  status: 'success' | 'error';
+  http_status: number;
+  source: 'backend' | 'frontend';
+  error_message: string | null;
+  extra: Record<string, unknown>;
+};
+
+export type ModuleSummary = {
+  module: string;
+  count: number;
+  avg_duration_ms: number;
+  max_duration_ms: number;
+  error_count: number;
+  error_rate_pct: number;
+};
+
+export type ObservabilitySummary = {
+  total_events: number;
+  avg_duration_ms: number;
+  p95_duration_ms: number;
+  max_duration_ms: number;
+  error_count: number;
+  error_rate_pct: number;
+  by_module: ModuleSummary[];
+  slowest_operation: string | null;
+  slowest_duration_ms: number | null;
+  source: 'database' | 'log_file';
+};
+
+export async function fetchObservabilityEvents(limit = 200): Promise<PerfEvent[]> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/observability/events?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch performance events');
+  }
+  return response.json();
+}
+
+export async function fetchObservabilitySummary(limit = 500): Promise<ObservabilitySummary> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/observability/summary?limit=${limit}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch performance summary');
+  }
+  return response.json();
+}
+
+export function observabilityExportUrl(): string {
+  return `${apiBaseUrl}/api/v1/observability/export`;
+}
+

@@ -12,6 +12,7 @@ import DataMapperModule from './components/DataMapperModule';
 import ProcessExplorerModule from './components/ProcessExplorerModule';
 import AIConsultantModule from './components/AIConsultantModule';
 import ROIStudioModule from './components/ROIStudioModule';
+import ObservabilityModule from './components/ObservabilityModule';
 import SettingsModule from './components/SettingsModule';
 import WelcomeScreen from './components/WelcomeScreen';
 import { IconBot, IconDollarSign, IconFolder, IconWorkflow } from './components/Icons';
@@ -107,6 +108,9 @@ function AppShell() {
           </div>
           <div style={{ display: activeModule === 'roistudio' ? 'block' : 'none' }}>
             <ROIStudioModule graphData={graphData} aiResult={aiResult} onCalculatedChange={setRoiDone} />
+          </div>
+          <div style={{ display: activeModule === 'observability' ? 'block' : 'none' }}>
+            <ObservabilityModule />
           </div>
           <div style={{ display: activeModule === 'settings' ? 'block' : 'none' }}>
             <SettingsModule />

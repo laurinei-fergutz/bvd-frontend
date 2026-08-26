@@ -257,6 +257,36 @@ const dictionaries = {
     'roi.costScalingHint':
       '1,0 = linear · <1,0 = sublinear (economia de escala) · >1,0 = custo cresce mais rápido que o volume',
 
+    // Observability
+    'sidebar.observability': 'Observabilidade',
+    'obs.title': 'Observabilidade & Performance',
+    'obs.subtitle':
+      'Log de performance de cada etapa do BVD - timestamp, módulo, operação e duração de cada chamada, no estilo Sentry/New Relic, avaliado dentro da própria plataforma.',
+    'obs.refresh': 'Atualizar',
+    'obs.refreshing': 'Atualizando...',
+    'obs.export': 'Exportar Log (.jsonl)',
+    'obs.source': 'Fonte dos dados',
+    'obs.source.database': 'Banco de dados',
+    'obs.source.log_file': 'Arquivo de log (fallback - banco indisponível)',
+    'obs.totalEvents': 'Total de Eventos',
+    'obs.avgDuration': 'Duração Média',
+    'obs.p95Duration': 'P95',
+    'obs.maxDuration': 'Duração Máxima',
+    'obs.errorRate': 'Taxa de Erro',
+    'obs.slowestOperation': 'Operação Mais Lenta',
+    'obs.byModule': 'Por Módulo',
+    'obs.recentEvents': 'Eventos Recentes',
+    'obs.column.timestamp': 'Timestamp',
+    'obs.column.module': 'Módulo',
+    'obs.column.operation': 'Operação',
+    'obs.column.duration': 'Duração',
+    'obs.column.status': 'Status',
+    'obs.column.source': 'Origem',
+    'obs.status.success': 'sucesso',
+    'obs.status.error': 'erro',
+    'obs.noEvents': 'Nenhum evento registrado ainda - navegue pelo BVD para gerar dados.',
+    'obs.loadError': 'Erro ao carregar dados de performance',
+
     // Settings
     'settings.title': 'Configurações',
     'settings.subtitle':
@@ -535,6 +565,36 @@ const dictionaries = {
     'roi.costScalingFactor': 'Cost Scaling Factor',
     'roi.costScalingHint':
       '1.0 = linear · <1.0 = sublinear (economies of scale) · >1.0 = cost grows faster than volume',
+
+    // Observability
+    'sidebar.observability': 'Observability',
+    'obs.title': 'Observability & Performance',
+    'obs.subtitle':
+      "A performance log of every BVD step - timestamp, module, operation, and duration for every call, Sentry/New Relic-style, evaluated right inside the platform.",
+    'obs.refresh': 'Refresh',
+    'obs.refreshing': 'Refreshing...',
+    'obs.export': 'Export Log (.jsonl)',
+    'obs.source': 'Data source',
+    'obs.source.database': 'Database',
+    'obs.source.log_file': 'Log file (fallback - DB unavailable)',
+    'obs.totalEvents': 'Total Events',
+    'obs.avgDuration': 'Avg Duration',
+    'obs.p95Duration': 'P95',
+    'obs.maxDuration': 'Max Duration',
+    'obs.errorRate': 'Error Rate',
+    'obs.slowestOperation': 'Slowest Operation',
+    'obs.byModule': 'By Module',
+    'obs.recentEvents': 'Recent Events',
+    'obs.column.timestamp': 'Timestamp',
+    'obs.column.module': 'Module',
+    'obs.column.operation': 'Operation',
+    'obs.column.duration': 'Duration',
+    'obs.column.status': 'Status',
+    'obs.column.source': 'Source',
+    'obs.status.success': 'success',
+    'obs.status.error': 'error',
+    'obs.noEvents': 'No events recorded yet - browse around BVD to generate data.',
+    'obs.loadError': 'Error loading performance data',
 
     // Settings
     'settings.title': 'Settings',

@@ -1,7 +1,7 @@
 import { useSettings } from '../context/SettingsContext';
-import { IconSettings, IconSliders } from './Icons';
+import { IconActivity, IconSettings, IconSliders } from './Icons';
 
-export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'roistudio' | 'settings';
+export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'roistudio' | 'observability' | 'settings';
 
 type ModuleStatus = {
   id: ModuleId;
@@ -67,6 +67,11 @@ function renderModuleButton(
 export default function Sidebar({ activeModule, onSelect, modules }: Props) {
   const { t } = useSettings();
   const settingsModule: ModuleStatus = { id: 'settings', icon: <IconSettings size={16} />, label: t('sidebar.settings') };
+  const observabilityModule: ModuleStatus = {
+    id: 'observability',
+    icon: <IconActivity size={16} />,
+    label: t('sidebar.observability'),
+  };
   const doneTitle = { done: t('sidebar.processed'), notDone: t('sidebar.notProcessed') };
   const comingSoon = [{ icon: <IconSliders size={16} />, label: t('sidebar.commandCenter') }];
 
@@ -119,7 +124,8 @@ export default function Sidebar({ activeModule, onSelect, modules }: Props) {
       </div>
 
       <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem' }}>
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <li>{renderModuleButton(observabilityModule, activeModule === 'observability', onSelect, doneTitle)}</li>
           <li>{renderModuleButton(settingsModule, activeModule === 'settings', onSelect, doneTitle)}</li>
         </ul>
       </div>
