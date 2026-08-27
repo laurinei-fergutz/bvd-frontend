@@ -1,4 +1,5 @@
 import { apiBaseUrl } from '../services/api';
+import { getObservabilityCollectionEnabled } from './observabilityFlag';
 
 /**
  * Global RUM-style instrumentation, installed once at startup: wraps
@@ -55,6 +56,10 @@ function reportEvent(
   status: 'success' | 'error',
   errorMessage?: string,
 ): void {
+  if (!getObservabilityCollectionEnabled()) {
+    return;
+  }
+
   // Fire-and-forget: telemetry must never delay or break the app it's
   // observing. Uses the captured original fetch so this call isn't
   // recursively re-instrumented.

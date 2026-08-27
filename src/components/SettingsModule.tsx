@@ -9,7 +9,17 @@ import {
   type ThemeMode,
 } from '../context/SettingsContext';
 import { fetchLLMEngines } from '../services/api';
-import { IconAlertTriangle, IconBot, IconBrain, IconDocument, IconGlobe, IconMoon, IconSettings, IconSun } from './Icons';
+import {
+  IconActivity,
+  IconAlertTriangle,
+  IconBot,
+  IconBrain,
+  IconDocument,
+  IconGlobe,
+  IconMoon,
+  IconSettings,
+  IconSun,
+} from './Icons';
 
 const cardBase: React.CSSProperties = {
   border: '1px solid var(--border)',
@@ -84,7 +94,17 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 
 export default function SettingsModule() {
-  const { theme, setTheme, language, setLanguage, promptMode, setPromptMode, t } = useSettings();
+  const {
+    theme,
+    setTheme,
+    language,
+    setLanguage,
+    promptMode,
+    setPromptMode,
+    observabilityEnabled,
+    setObservabilityEnabled,
+    t,
+  } = useSettings();
   const [systemPrompt, setSystemPrompt] = useState('');
   const [systemPromptLoading, setSystemPromptLoading] = useState(true);
   const [systemPromptError, setSystemPromptError] = useState('');
@@ -166,6 +186,39 @@ export default function SettingsModule() {
             comingSoonLabel={t('settings.comingSoon')}
             comingSoonTitle={t('settings.comingSoonTitle')}
             onClick={() => setLanguage('en')}
+          />
+        </div>
+      </section>
+
+      <section style={sectionStyle}>
+        <h3 style={sectionTitleStyle}>
+          <IconActivity size={16} /> {t('settings.observability')}
+        </h3>
+        <p style={{ color: 'var(--text-secondary)', marginTop: 0, fontSize: '0.85rem', maxWidth: '640px' }}>
+          {t('settings.observabilitySubtitle')}
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <OptionCard
+            icon={<IconActivity size={17} />}
+            label={t('settings.observabilityEnabled')}
+            active={observabilityEnabled}
+            available
+            activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
+            comingSoonLabel={t('settings.comingSoon')}
+            comingSoonTitle={t('settings.comingSoonTitle')}
+            onClick={() => setObservabilityEnabled(true)}
+          />
+          <OptionCard
+            icon={<IconAlertTriangle size={17} />}
+            label={t('settings.observabilityDisabled')}
+            active={!observabilityEnabled}
+            available
+            activeLabel={t('settings.active')}
+            inactiveLabel={t('settings.selectOption')}
+            comingSoonLabel={t('settings.comingSoon')}
+            comingSoonTitle={t('settings.comingSoonTitle')}
+            onClick={() => setObservabilityEnabled(false)}
           />
         </div>
       </section>

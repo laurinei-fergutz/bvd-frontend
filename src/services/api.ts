@@ -469,3 +469,27 @@ export function observabilityExportUrl(): string {
   return `${apiBaseUrl}/api/v1/observability/export`;
 }
 
+export type ObservabilityConfig = {
+  enabled: boolean;
+};
+
+export async function fetchObservabilityConfig(): Promise<ObservabilityConfig> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/observability/config`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch observability config');
+  }
+  return response.json();
+}
+
+export async function updateObservabilityConfig(enabled: boolean): Promise<ObservabilityConfig> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/observability/config`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!response.ok) {
+    throw new Error('Failed to update observability config');
+  }
+  return response.json();
+}
+

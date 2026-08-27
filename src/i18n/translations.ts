@@ -316,6 +316,11 @@ const dictionaries = {
       'A geração automática do prompt ainda não foi implementada - por enquanto, o prompt pré-definido continua sendo usado independentemente desta escolha.',
     'settings.selectOption': 'Selecionar',
     'settings.currentPromptLoading': 'Carregando prompt...',
+    'settings.observability': 'Coleta de Dados de Performance',
+    'settings.observabilitySubtitle':
+      'Liga/desliga o log de performance (timestamp, módulo, operação, duração) usado pelo módulo Observabilidade. Controlado pela flag de ambiente OBSERVABILITY_ENABLED; alterar aqui atualiza em tempo real, sem reiniciar o servidor.',
+    'settings.observabilityEnabled': 'Ativada',
+    'settings.observabilityDisabled': 'Desativada',
   },
   en: {
     // Welcome screen
@@ -624,6 +629,11 @@ const dictionaries = {
       "Automatic prompt generation isn't implemented yet - for now, the predefined prompt keeps being used regardless of this choice.",
     'settings.selectOption': 'Select',
     'settings.currentPromptLoading': 'Loading prompt...',
+    'settings.observability': 'Performance Data Collection',
+    'settings.observabilitySubtitle':
+      "Turns the performance log (timestamp, module, operation, duration) used by the Observability module on/off. Backed by the OBSERVABILITY_ENABLED environment flag; toggling here updates it at runtime, no server restart needed.",
+    'settings.observabilityEnabled': 'Enabled',
+    'settings.observabilityDisabled': 'Disabled',
   },
 } as const satisfies Record<Language, Record<string, string>>;
 

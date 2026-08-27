@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 import { translate, type TranslationKey } from '../i18n/translations';
+import { fetchObservabilityConfig, updateObservabilityConfig } from '../services/api';
+import { setObservabilityCollectionEnabled } from '../utils/observabilityFlag';
 
 export type ThemeMode = 'dark' | 'light';
 export type Language = 'pt' | 'en';
@@ -20,6 +22,7 @@ export const AVAILABLE_PROMPT_MODES: PromptMode[] = ['predefined', 'llama'];
 const THEME_KEY = 'bvd-theme';
 const LANGUAGE_KEY = 'bvd-language';
 const PROMPT_MODE_KEY = 'bvd-prompt-mode';
+const OBSERVABILITY_ENABLED_KEY = 'bvd-observability-enabled';
 
 type SettingsContextValue = {
   theme: ThemeMode;
@@ -28,6 +31,11 @@ type SettingsContextValue = {
   setLanguage: (language: Language) => void;
   promptMode: PromptMode;
   setPromptMode: (mode: PromptMode) => void;
+  /** Whether performance-log collection (backend + frontend) is on. Backed
+   * by the OBSERVABILITY_ENABLED env flag; toggling here updates it at
+   * runtime via the /observability/config endpoint. */
+  observabilityEnabled: boolean;
+  setObservabilityEnabled: (enabled: boolean) => void;
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 };
 
@@ -38,11 +46,21 @@ function readStored<T extends string>(key: string, available: T[], fallback: T):
   return stored && available.includes(stored) ? stored : fallback;
 }
 
+function readStoredBool(key: string, fallback: boolean): boolean {
+  const stored = window.localStorage.getItem(key);
+  if (stored === 'true') return true;
+  if (stored === 'false') return false;
+  return fallback;
+}
+
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>(() => readStored(THEME_KEY, AVAILABLE_THEMES, 'dark'));
   const [language, setLanguage] = useState<Language>(() => readStored(LANGUAGE_KEY, AVAILABLE_LANGUAGES, 'pt'));
   const [promptMode, setPromptMode] = useState<PromptMode>(() =>
     readStored(PROMPT_MODE_KEY, AVAILABLE_PROMPT_MODES, 'predefined'),
+  );
+  const [observabilityEnabled, setObservabilityEnabledState] = useState<boolean>(() =>
+    readStoredBool(OBSERVABILITY_ENABLED_KEY, true),
   );
 
   useEffect(() => {
@@ -59,10 +77,42 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(PROMPT_MODE_KEY, promptMode);
   }, [promptMode]);
 
+  useEffect(() => {
+    window.localStorage.setItem(OBSERVABILITY_ENABLED_KEY, String(observabilityEnabled));
+    setObservabilityCollectionEnabled(observabilityEnabled);
+  }, [observabilityEnabled]);
+
+  useEffect(() => {
+    // The backend is the source of truth (env flag, possibly toggled from
+    // another client) - reconcile the locally-stored guess with it once on
+    // load. Best-effort: if the backend is unreachable, keep the local value.
+    fetchObservabilityConfig()
+      .then((config) => setObservabilityEnabledState(config.enabled))
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const setObservabilityEnabled = (enabled: boolean) => {
+    setObservabilityEnabledState(enabled);
+    updateObservabilityConfig(enabled).catch(() => undefined);
+  };
+
   const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(language, key, vars);
 
   return (
-    <SettingsContext.Provider value={{ theme, setTheme, language, setLanguage, promptMode, setPromptMode, t }}>
+    <SettingsContext.Provider
+      value={{
+        theme,
+        setTheme,
+        language,
+        setLanguage,
+        promptMode,
+        setPromptMode,
+        observabilityEnabled,
+        setObservabilityEnabled,
+        t,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );
