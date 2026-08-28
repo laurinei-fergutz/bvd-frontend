@@ -1,7 +1,14 @@
 import { useSettings } from '../context/SettingsContext';
 import { IconActivity, IconSettings, IconSliders } from './Icons';
 
-export type ModuleId = 'datamapper' | 'processexplorer' | 'aiconsultant' | 'roistudio' | 'observability' | 'settings';
+export type ModuleId =
+  | 'datamapper'
+  | 'processexplorer'
+  | 'aiconsultant'
+  | 'roistudio'
+  | 'history'
+  | 'observability'
+  | 'settings';
 
 type ModuleStatus = {
   id: ModuleId;

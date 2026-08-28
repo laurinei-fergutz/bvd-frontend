@@ -23,6 +23,7 @@ export type MapperUploadPreviewResponse = {
   suggested_activity_col: string | null;
   suggested_timestamp_col: string | null;
   suggested_resource_col: string | null;
+  file_hash: string | null;
 };
 
 export async function fetchHealth() {
@@ -489,6 +490,90 @@ export async function updateObservabilityConfig(enabled: boolean): Promise<Obser
   });
   if (!response.ok) {
     throw new Error('Failed to update observability config');
+  }
+  return response.json();
+}
+
+export type AnalysisSession = {
+  id: number;
+  filename: string;
+  file_hash: string;
+  total_variants: number;
+  selected_variants: number;
+  process_metrics: Record<string, unknown>;
+  ai_engine: string;
+  ai_insights_summary: Array<Record<string, unknown>>;
+  roi_assumptions: Record<string, unknown>;
+  roi_result: Record<string, unknown>;
+  created_at: string;
+};
+
+export type EvolutionEntry = {
+  previous: number;
+  current: number;
+  pct_change: number | null;
+};
+
+export type CheckHashResponse = {
+  exists: boolean;
+  previous_session: AnalysisSession | null;
+};
+
+export type SaveSessionRequest = {
+  filename: string;
+  file_hash: string;
+  total_variants: number;
+  selected_variants: number;
+  process_metrics: Record<string, unknown>;
+  ai_engine: string;
+  ai_insights_summary: Array<Record<string, unknown>>;
+  roi_assumptions: Record<string, unknown>;
+  roi_result: Record<string, unknown>;
+};
+
+export type SaveSessionResponse = {
+  session: AnalysisSession;
+  evolution: Record<string, EvolutionEntry> | null;
+};
+
+export type HistorySeriesResponse = {
+  sessions: AnalysisSession[];
+  evolution_by_session_id: Record<string, Record<string, EvolutionEntry>>;
+};
+
+export async function checkHistoryHash(fileHash: string): Promise<CheckHashResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/history/check-hash?file_hash=${encodeURIComponent(fileHash)}`);
+  if (!response.ok) {
+    throw new Error('Failed to check file history');
+  }
+  return response.json();
+}
+
+export async function saveAnalysisSession(payload: SaveSessionRequest): Promise<SaveSessionResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/history/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to save analysis session');
+  }
+  return response.json();
+}
+
+export async function fetchHistorySessions(): Promise<AnalysisSession[]> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/history/sessions`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch analysis history');
+  }
+  return response.json();
+}
+
+export async function fetchHistoryByFilename(filename: string): Promise<HistorySeriesResponse> {
+  const response = await fetch(`${apiBaseUrl}/api/v1/history/sessions/by-filename/${encodeURIComponent(filename)}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch file analysis history');
   }
   return response.json();
 }

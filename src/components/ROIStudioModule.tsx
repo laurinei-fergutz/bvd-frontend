@@ -5,8 +5,11 @@ import {
   downloadRoiCsv,
   downloadRoiXlsx,
   fetchSavedRoiAssumptions,
+  saveAnalysisSession,
   saveRoiAssumptions,
   type AnalyzeProcessResponse,
+  type EvolutionEntry,
+  type MapperUploadPreviewResponse,
   type ProcessGraphResponse,
   type RoiAssumptions,
   type RoiCalculationResult,
@@ -17,6 +20,7 @@ import {
   IconAlertTriangle,
   IconDollarSign,
   IconDocument,
+  IconHistory,
   IconLock,
   IconSave,
   IconSpinner,
@@ -149,10 +153,18 @@ function NumberField({
 type Props = {
   graphData: ProcessGraphResponse | null;
   aiResult: AnalyzeProcessResponse | null;
+  mapperResult: MapperUploadPreviewResponse | null;
+  checkedVariantIndices: Set<number>;
   onCalculatedChange: (calculated: boolean) => void;
 };
 
-export default function ROIStudioModule({ graphData, aiResult, onCalculatedChange }: Props) {
+export default function ROIStudioModule({
+  graphData,
+  aiResult,
+  mapperResult,
+  checkedVariantIndices,
+  onCalculatedChange,
+}: Props) {
   const { t, language } = useSettings();
   const [assumptions, setAssumptions] = useState<RoiAssumptions>(DEFAULT_ASSUMPTIONS);
   const [result, setResult] = useState<RoiCalculationResult | null>(null);
@@ -164,6 +176,10 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
   const [exportError, setExportError] = useState('');
   const [exportingXlsx, setExportingXlsx] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [savingHistory, setSavingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const [historySaved, setHistorySaved] = useState(false);
+  const [historyEvolution, setHistoryEvolution] = useState<Record<string, EvolutionEntry> | null>(null);
 
   useEffect(() => {
     fetchSavedRoiAssumptions()
@@ -180,6 +196,9 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
   useEffect(() => {
     setResult(null);
     setCalculateError('');
+    setHistoryEvolution(null);
+    setHistoryError('');
+    setHistorySaved(false);
   }, [graphData, aiResult]);
 
   useEffect(() => {
@@ -218,6 +237,39 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
       setSaveError(err instanceof Error ? err.message : t('roi.assumptionsSaveError'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveToHistory = async () => {
+    if (!graphData || !aiResult || !result || !mapperResult?.file_hash) return;
+
+    setSavingHistory(true);
+    setHistoryError('');
+    setHistoryEvolution(null);
+    setHistorySaved(false);
+    try {
+      const response = await saveAnalysisSession({
+        filename: mapperResult.filename,
+        file_hash: mapperResult.file_hash,
+        total_variants: graphData.variants.length || 1,
+        selected_variants: checkedVariantIndices.size || 1,
+        process_metrics: graphData.metrics,
+        ai_engine: aiResult.engine_used,
+        ai_insights_summary: aiResult.insights.map((i) => ({
+          title: i.title,
+          category: i.category,
+          complexity: i.complexity,
+          estimated_efficiency_gain: i.estimated_efficiency_gain,
+        })),
+        roi_assumptions: assumptions,
+        roi_result: result,
+      });
+      setHistorySaved(true);
+      setHistoryEvolution(response.evolution);
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : t('history.saveError'));
+    } finally {
+      setSavingHistory(false);
     }
   };
 
@@ -530,8 +582,60 @@ export default function ROIStudioModule({ graphData, aiResult, onCalculatedChang
             <button type="button" onClick={() => handleExport('csv')} disabled={exportingCsv} style={buttonStyle}>
               {exportingCsv ? <IconSpinner size={15} /> : <IconDocument size={15} />} {t('roi.exportCsv')}
             </button>
+            <button
+              type="button"
+              onClick={handleSaveToHistory}
+              disabled={savingHistory || !mapperResult?.file_hash}
+              title={mapperResult?.file_hash ? undefined : t('history.saveError')}
+              style={buttonStyle}
+            >
+              {savingHistory ? <IconSpinner size={15} /> : <IconHistory size={15} />}{' '}
+              {savingHistory ? t('history.saving') : t('history.saveButton')}
+            </button>
           </section>
           {exportError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem' }}>{exportError}</p>}
+          {historyError && <p style={{ color: 'var(--danger-light)', fontSize: '0.85rem' }}>{historyError}</p>}
+
+          {historySaved && (
+            <div style={{ ...cardStyle, marginTop: '1rem' }}>
+              <p
+                style={{
+                  color: 'var(--accent-green)',
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  marginTop: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <IconHistory size={15} /> {t('history.saveSuccess')}
+              </p>
+              {historyEvolution ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  {Object.entries(historyEvolution).map(([key, entry]) => (
+                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{key}</span>
+                      <span
+                        style={{
+                          color:
+                            entry.pct_change == null
+                              ? 'var(--text-tertiary)'
+                              : entry.pct_change >= 0
+                                ? 'var(--accent-green)'
+                                : 'var(--danger-light)',
+                        }}
+                      >
+                        {entry.pct_change == null ? '—' : `${entry.pct_change >= 0 ? '+' : ''}${entry.pct_change.toFixed(1)}%`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', margin: 0 }}>{t('history.firstRun')}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
 

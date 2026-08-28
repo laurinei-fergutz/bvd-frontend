@@ -13,9 +13,10 @@ import ProcessExplorerModule from './components/ProcessExplorerModule';
 import AIConsultantModule from './components/AIConsultantModule';
 import ROIStudioModule from './components/ROIStudioModule';
 import ObservabilityModule from './components/ObservabilityModule';
+import HistoryModule from './components/HistoryModule';
 import SettingsModule from './components/SettingsModule';
 import WelcomeScreen from './components/WelcomeScreen';
-import { IconBot, IconDollarSign, IconFolder, IconWorkflow } from './components/Icons';
+import { IconBot, IconDollarSign, IconFolder, IconHistory, IconWorkflow } from './components/Icons';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 
 function AppShell() {
@@ -85,6 +86,11 @@ function AppShell() {
               label: t('module.roistudio'),
               done: roiDone,
             },
+            {
+              id: 'history',
+              icon: <IconHistory size={16} />,
+              label: t('module.history'),
+            },
           ]}
         />
 
@@ -107,7 +113,16 @@ function AppShell() {
             />
           </div>
           <div style={{ display: activeModule === 'roistudio' ? 'block' : 'none' }}>
-            <ROIStudioModule graphData={graphData} aiResult={aiResult} onCalculatedChange={setRoiDone} />
+            <ROIStudioModule
+              graphData={graphData}
+              aiResult={aiResult}
+              mapperResult={mapperResult}
+              checkedVariantIndices={checkedVariantIndices}
+              onCalculatedChange={setRoiDone}
+            />
+          </div>
+          <div style={{ display: activeModule === 'history' ? 'block' : 'none' }}>
+            <HistoryModule />
           </div>
           <div style={{ display: activeModule === 'observability' ? 'block' : 'none' }}>
             <ObservabilityModule />

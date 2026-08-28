@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 
-import { uploadMapperFile, type MapperUploadPreviewResponse } from '../services/api';
+import { checkHistoryHash, uploadMapperFile, type AnalysisSession, type MapperUploadPreviewResponse } from '../services/api';
 import { downloadJson } from '../utils/exportUtils';
 import { useSettings } from '../context/SettingsContext';
 import {
+  IconAlertTriangle,
   IconCheck,
   IconCheckCircle,
   IconClipboard,
@@ -39,10 +40,11 @@ type Props = {
 };
 
 export default function DataMapperModule({ result, onResult }: Props) {
-  const { t } = useSettings();
+  const { t, language } = useSettings();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [repeatWarning, setRepeatWarning] = useState<AnalysisSession | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (file: File) => {
@@ -53,11 +55,21 @@ export default function DataMapperModule({ result, onResult }: Props) {
 
     setLoading(true);
     setError('');
+    setRepeatWarning(null);
     onResult(null);
 
     try {
       const uploaded = await uploadMapperFile(file);
       onResult(uploaded);
+
+      if (uploaded.file_hash) {
+        // Informational only - never blocks the flow. If the DB isn't
+        // reachable or this is a first-time file, this just silently
+        // stays empty.
+        checkHistoryHash(uploaded.file_hash)
+          .then((check) => setRepeatWarning(check.previous_session))
+          .catch(() => undefined);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('datamapper.uploadError'));
     } finally {
@@ -163,6 +175,48 @@ export default function DataMapperModule({ result, onResult }: Props) {
           }}
         >
           <IconXCircle size={18} /> {error}
+        </div>
+      )}
+
+      {repeatWarning && (
+        <div
+          style={{
+            background: 'var(--bg-surface-alt)',
+            color: 'var(--text-primary)',
+            padding: '1rem',
+            borderRadius: '8px',
+            marginTop: '1rem',
+            border: '1px solid var(--accent-amber)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '0.6rem',
+          }}
+        >
+          <IconAlertTriangle size={18} color="var(--accent-amber)" style={{ marginTop: '0.15rem', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 600, margin: 0 }}>{t('history.repeatTitle')}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0.25rem 0 0' }}>
+              {t('history.repeatMessagePrefix')}{' '}
+              <strong>{new Date(repeatWarning.created_at).toLocaleString(language === 'pt' ? 'pt-BR' : 'en-US')}</strong>
+              {t('history.repeatMessageSuffix')}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRepeatWarning(null)}
+            style={{
+              background: 'var(--bg-surface)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
+              borderRadius: '6px',
+              padding: '0.4rem 0.8rem',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {t('history.repeatDismiss')}
+          </button>
         </div>
       )}
 

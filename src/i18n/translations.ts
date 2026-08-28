@@ -22,6 +22,7 @@ const dictionaries = {
     'module.processexplorer': 'ProcessExplorer',
     'module.aiconsultant': 'AI Consultant',
     'module.roistudio': 'ROI Studio',
+    'module.history': 'Histórico',
 
     // DataMapper
     'datamapper.invalidFile': 'Por favor, selecione um arquivo CSV, Excel (.xlsx), log (.log) ou XES (.xes)',
@@ -257,6 +258,34 @@ const dictionaries = {
     'roi.costScalingHint':
       '1,0 = linear · <1,0 = sublinear (economia de escala) · >1,0 = custo cresce mais rápido que o volume',
 
+    // History
+    'history.title': 'Histórico de Análises',
+    'history.subtitle':
+      'Cada sessão completa (ProcessExplorer + AI Consultant + ROI Studio) fica registrada aqui, agrupada por arquivo, para acompanhar a evolução percentual de cada parâmetro entre execuções.',
+    'history.loadError': 'Erro ao carregar o histórico',
+    'history.loading': 'Carregando histórico...',
+    'history.noSessions': 'Nenhuma análise salva ainda - calcule o ROI de um processo e clique em "Salvar no Histórico".',
+    'history.runsCount': '{{count}} execuções',
+    'history.lastRun': 'Última execução:',
+    'history.viewSeries': 'Ver evolução',
+    'history.backToList': 'Voltar à lista',
+    'history.column.date': 'Data',
+    'history.column.engine': 'Motor de IA',
+    'history.column.scope': 'Escopo',
+    'history.variantsBadge.single': '1 processo',
+    'history.variantsBadge.multiple': '{{count}} processos selecionados',
+    'history.evolutionTitle': 'Evolução dos Parâmetros',
+    'history.evolutionVsPrevious': 'vs. execução anterior',
+    'history.firstRun': 'Primeira execução deste arquivo - sem execução anterior para comparar.',
+    'history.saveButton': 'Salvar no Histórico',
+    'history.saving': 'Salvando...',
+    'history.saveSuccess': 'Sessão salva no histórico!',
+    'history.saveError': 'Erro ao salvar no histórico',
+    'history.repeatTitle': 'Este arquivo já foi analisado',
+    'history.repeatMessagePrefix': 'Última análise deste arquivo em',
+    'history.repeatMessageSuffix': '. Deseja repetir a análise mesmo assim?',
+    'history.repeatDismiss': 'Continuar mesmo assim',
+
     // Observability
     'sidebar.observability': 'Observabilidade',
     'obs.title': 'Observabilidade & Performance',
@@ -338,6 +367,7 @@ const dictionaries = {
     'module.processexplorer': 'ProcessExplorer',
     'module.aiconsultant': 'AI Consultant',
     'module.roistudio': 'ROI Studio',
+    'module.history': 'History',
 
     // DataMapper
     'datamapper.invalidFile': 'Please select a CSV, Excel (.xlsx), log (.log) or XES (.xes) file',
@@ -570,6 +600,34 @@ const dictionaries = {
     'roi.costScalingFactor': 'Cost Scaling Factor',
     'roi.costScalingHint':
       '1.0 = linear · <1.0 = sublinear (economies of scale) · >1.0 = cost grows faster than volume',
+
+    // History
+    'history.title': 'Analysis History',
+    'history.subtitle':
+      'Every full session (ProcessExplorer + AI Consultant + ROI Studio) is recorded here, grouped by file, so you can track the percentage evolution of each parameter across runs.',
+    'history.loadError': 'Error loading history',
+    'history.loading': 'Loading history...',
+    'history.noSessions': 'No saved analyses yet - calculate an ROI result and click "Save to History".',
+    'history.runsCount': '{{count}} runs',
+    'history.lastRun': 'Last run:',
+    'history.viewSeries': 'View evolution',
+    'history.backToList': 'Back to list',
+    'history.column.date': 'Date',
+    'history.column.engine': 'AI Engine',
+    'history.column.scope': 'Scope',
+    'history.variantsBadge.single': '1 process',
+    'history.variantsBadge.multiple': '{{count}} processes selected',
+    'history.evolutionTitle': 'Parameter Evolution',
+    'history.evolutionVsPrevious': 'vs. previous run',
+    'history.firstRun': "This file's first run - no previous run to compare against.",
+    'history.saveButton': 'Save to History',
+    'history.saving': 'Saving...',
+    'history.saveSuccess': 'Session saved to history!',
+    'history.saveError': 'Error saving to history',
+    'history.repeatTitle': 'This file was already analyzed',
+    'history.repeatMessagePrefix': 'This file was last analyzed on',
+    'history.repeatMessageSuffix': '. Do you want to repeat the analysis anyway?',
+    'history.repeatDismiss': 'Continue anyway',
 
     // Observability
     'sidebar.observability': 'Observability',
