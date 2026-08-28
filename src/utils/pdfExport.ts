@@ -3,7 +3,13 @@ import jsPDF from 'jspdf';
 import type { Language } from '../context/SettingsContext';
 import { formatDuration } from '../components/ProcessGraph';
 import { translate, type TranslationKey } from '../i18n/translations';
-import type { AnalyzeProcessResponse, AutomationInsight, ProcessGraphResponse } from '../services/api';
+import type {
+  AnalysisSession,
+  AnalyzeProcessResponse,
+  AutomationInsight,
+  EvolutionEntry,
+  ProcessGraphResponse,
+} from '../services/api';
 
 const PAGE_WIDTH = 210; // A4, mm
 const PAGE_HEIGHT = 297;
@@ -105,27 +111,13 @@ async function renderVariantDiagram(sequence: string[], isHappyPath: boolean): P
   return { dataUrl, width, height };
 }
 
-type PdfExportParams = {
-  graph: ProcessGraphResponse;
-  checkedVariantIndices: Set<number>;
-  result: AnalyzeProcessResponse;
-  language: Language;
-};
-
 /**
- * Builds and downloads a self-contained PDF report of one AI Consultant
- * session: the ProcessExplorer indicators it was based on, a small flow
- * diagram of each process variant that was in scope, and the resulting
- * RPA/AI Agent insights.
+ * Shared page-building primitives for every PDF export in this file: a
+ * jsPDF document plus a running vertical cursor, auto-pagination, and a
+ * few text-drawing helpers matching the app's report style (title, section
+ * heading, body line with word-wrap).
  */
-export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, result, language }: PdfExportParams): Promise<void> {
-  const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(language, key, vars);
-  const complexityLabel: Record<AutomationInsight['complexity'], string> = {
-    low: t('ai.complexity.low'),
-    medium: t('ai.complexity.medium'),
-    high: t('ai.complexity.high'),
-  };
-
+function createPdfBuilder() {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   let y = MARGIN;
 
@@ -172,6 +164,58 @@ export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, re
     }
   };
 
+  const addFooterPageNumbers = (pageLabel: string) => {
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      setColor(INK.faint);
+      doc.text(`${pageLabel} ${i}/${pageCount}`, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 10, { align: 'right' });
+    }
+  };
+
+  return {
+    doc,
+    ensureSpace,
+    setColor,
+    addTitle,
+    addSectionHeading,
+    addLine,
+    addFooterPageNumbers,
+    get y() {
+      return y;
+    },
+    set y(value: number) {
+      y = value;
+    },
+  };
+}
+
+type PdfExportParams = {
+  graph: ProcessGraphResponse;
+  checkedVariantIndices: Set<number>;
+  result: AnalyzeProcessResponse;
+  language: Language;
+};
+
+/**
+ * Builds and downloads a self-contained PDF report of one AI Consultant
+ * session: the ProcessExplorer indicators it was based on, a small flow
+ * diagram of each process variant that was in scope, and the resulting
+ * RPA/AI Agent insights.
+ */
+export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, result, language }: PdfExportParams): Promise<void> {
+  const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(language, key, vars);
+  const complexityLabel: Record<AutomationInsight['complexity'], string> = {
+    low: t('ai.complexity.low'),
+    medium: t('ai.complexity.medium'),
+    high: t('ai.complexity.high'),
+  };
+
+  const builder = createPdfBuilder();
+  const { doc, ensureSpace, setColor, addTitle, addSectionHeading, addLine, addFooterPageNumbers } = builder;
+
   // Header
   addTitle(t('pdf.title'));
   addLine(
@@ -211,8 +255,8 @@ export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, re
       const displayHeight = diagram.height * (displayWidth / diagram.width);
 
       ensureSpace(displayHeight + 4);
-      doc.addImage(diagram.dataUrl, 'PNG', MARGIN, y, displayWidth, displayHeight);
-      y += displayHeight + 5;
+      doc.addImage(diagram.dataUrl, 'PNG', MARGIN, builder.y, displayWidth, displayHeight);
+      builder.y += displayHeight + 5;
     }
   }
 
@@ -227,8 +271,8 @@ export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, re
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11);
       setColor(INK.accentBlue);
-      doc.text(title, MARGIN, y);
-      y += 6;
+      doc.text(title, MARGIN, builder.y);
+      builder.y += 6;
 
       insights.forEach((insight) => {
         addLine(insight.title, { bold: true, size: 10.5, color: INK.heading });
@@ -242,7 +286,7 @@ export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, re
             color: INK.muted,
           });
         }
-        y += 3;
+        builder.y += 3;
       });
     };
 
@@ -250,16 +294,116 @@ export async function downloadAiConsultantPdf({ graph, checkedVariantIndices, re
     renderGroup(t('ai.aiAgents'), result.insights.filter((i) => i.category === 'ai_agent'));
   }
 
-  // Footer page numbers
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    setColor(INK.faint);
-    doc.text(`${t('pdf.page')} ${i}/${pageCount}`, PAGE_WIDTH - MARGIN, PAGE_HEIGHT - 10, { align: 'right' });
-  }
+  addFooterPageNumbers(t('pdf.page'));
 
   const dateStamp = new Date(result.generated_at).toISOString().slice(0, 10);
   doc.save(`ai-consultant-insights-${dateStamp}.pdf`);
+}
+
+function formatMetricValue(value: unknown): string {
+  if (value == null) return '—';
+  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2);
+  if (typeof value === 'boolean') return value ? 'true' : 'false';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
+
+function humanizeKey(key: string): string {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+type HistorySessionPdfParams = {
+  session: AnalysisSession;
+  evolution: Record<string, EvolutionEntry> | null;
+  language: Language;
+};
+
+/**
+ * Builds and downloads a self-contained PDF summary of one saved History
+ * session: the process/ROI indicators it recorded, its AI insights, and -
+ * when this session isn't the file's first run - the percentage change of
+ * every indicator versus the run immediately before it (the same
+ * evolution already shown on screen in the History tab's series view).
+ */
+export async function downloadHistorySessionPdf({ session, evolution, language }: HistorySessionPdfParams): Promise<void> {
+  const t = (key: TranslationKey, vars?: Record<string, string | number>) => translate(language, key, vars);
+  const locale = language === 'pt' ? 'pt-BR' : 'en-US';
+
+  const { doc, addTitle, addSectionHeading, addLine, addFooterPageNumbers } = createPdfBuilder();
+
+  // Header
+  addTitle(t('pdf.historyTitle'));
+  addLine(`${t('datamapper.file')}: ${session.filename}`, { bold: true });
+  addLine(
+    `${t('history.column.date')}: ${new Date(session.created_at).toLocaleString(locale)} · ${t('history.column.engine')}: ${session.ai_engine}`,
+    { color: INK.muted, size: 9.5 },
+  );
+  addLine(
+    session.selected_variants > 1
+      ? t('history.variantsBadge.multiple', { count: session.selected_variants })
+      : t('history.variantsBadge.single'),
+    { color: INK.muted, size: 9.5 },
+  );
+
+  // Section 1: process metrics snapshot
+  addSectionHeading(t('pdf.mainIndicators'));
+  const processEntries = Object.entries(session.process_metrics);
+  if (processEntries.length === 0) {
+    addLine(t('pdf.noProcessesSelected'), { color: INK.faint });
+  } else {
+    for (const [key, value] of processEntries) {
+      addLine(`${humanizeKey(key)}: ${formatMetricValue(value)}`);
+    }
+  }
+
+  // Section 2: AI Consultant insights summary
+  addSectionHeading(t('pdf.aiResults'));
+  if (session.ai_insights_summary.length === 0) {
+    addLine(t('pdf.noInsights'), { color: INK.faint });
+  } else {
+    session.ai_insights_summary.forEach((insight) => {
+      addLine(String(insight.title ?? ''), { bold: true, size: 10.5, color: INK.heading });
+      addLine(
+        `${t('pdf.complexity')}: ${formatMetricValue(insight.complexity)} · ${t('pdf.efficiencyGain')}: ${formatMetricValue(insight.estimated_efficiency_gain)}`,
+        { size: 9, color: INK.muted },
+      );
+    });
+  }
+
+  // Section 3: ROI Studio results
+  addSectionHeading(t('pdf.roiResults'));
+  const roiEntries = Object.entries(session.roi_result);
+  if (roiEntries.length === 0) {
+    addLine(t('pdf.noInsights'), { color: INK.faint });
+  } else {
+    for (const [key, value] of roiEntries) {
+      addLine(`${humanizeKey(key)}: ${formatMetricValue(value)}`);
+    }
+  }
+
+  // Section 4: what changed versus the previous run of this same file
+  addSectionHeading(t('pdf.evolutionSection'));
+  if (!evolution || Object.keys(evolution).length === 0) {
+    addLine(t('history.firstRun'), { color: INK.faint });
+  } else {
+    for (const [key, entry] of Object.entries(evolution)) {
+      const pctText = entry.pct_change == null ? '—' : `${entry.pct_change >= 0 ? '+' : ''}${entry.pct_change.toFixed(1)}%`;
+      const pctColor = entry.pct_change == null ? INK.muted : entry.pct_change >= 0 ? INK.accentGreen : ([220, 38, 38] as const);
+      // jsPDF's built-in helvetica font only supports WinAnsi encoding - the
+      // U+2192 arrow isn't in it (renders as garbled glyphs), unlike the
+      // em-dash used elsewhere in this file, so an ASCII arrow is used here.
+      addLine(
+        `${humanizeKey(key)}: ${formatMetricValue(entry.previous)} -> ${formatMetricValue(entry.current)} (${pctText})`,
+        { color: pctColor },
+      );
+    }
+  }
+
+  addFooterPageNumbers(t('pdf.page'));
+
+  const dateStamp = new Date(session.created_at).toISOString().slice(0, 10);
+  const safeFilename = session.filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  doc.save(`historico-${safeFilename}-${dateStamp}.pdf`);
 }

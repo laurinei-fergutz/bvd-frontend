@@ -177,6 +177,9 @@ const dictionaries = {
     'pdf.businessJustification': 'Justificativa de negócio',
     'pdf.relatedActivities': 'Atividades relacionadas',
     'pdf.page': 'Página',
+    'pdf.historyTitle': 'Resumo da Sessão de Análise',
+    'pdf.roiResults': 'Resultados do ROI Studio',
+    'pdf.evolutionSection': 'Evolução em Relação à Análise Anterior',
 
     // ROI & Value Studio
     'roi.title': 'ROI & Value Studio',
@@ -285,6 +288,9 @@ const dictionaries = {
     'history.repeatMessagePrefix': 'Última análise deste arquivo em',
     'history.repeatMessageSuffix': '. Deseja repetir a análise mesmo assim?',
     'history.repeatDismiss': 'Continuar mesmo assim',
+    'history.downloadPdf': 'Baixar PDF',
+    'history.downloadingPdf': 'Gerando PDF...',
+    'history.downloadPdfError': 'Erro ao gerar o PDF',
 
     // Observability
     'sidebar.observability': 'Observabilidade',
@@ -520,6 +526,9 @@ const dictionaries = {
     'pdf.businessJustification': 'Business justification',
     'pdf.relatedActivities': 'Related activities',
     'pdf.page': 'Page',
+    'pdf.historyTitle': 'Analysis Session Summary',
+    'pdf.roiResults': 'ROI Studio Results',
+    'pdf.evolutionSection': 'Evolution vs. Previous Run',
 
     // ROI & Value Studio
     'roi.title': 'ROI & Value Studio',
@@ -628,6 +637,9 @@ const dictionaries = {
     'history.repeatMessagePrefix': 'This file was last analyzed on',
     'history.repeatMessageSuffix': '. Do you want to repeat the analysis anyway?',
     'history.repeatDismiss': 'Continue anyway',
+    'history.downloadPdf': 'Download PDF',
+    'history.downloadingPdf': 'Generating PDF...',
+    'history.downloadPdfError': 'Error generating the PDF',
 
     // Observability
     'sidebar.observability': 'Observability',

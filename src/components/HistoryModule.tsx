@@ -6,8 +6,9 @@ import {
   type AnalysisSession,
   type EvolutionEntry,
 } from '../services/api';
+import { downloadHistorySessionPdf } from '../utils/pdfExport';
 import { useSettings } from '../context/SettingsContext';
-import { IconAlertTriangle, IconHistory, IconSpinner, IconTarget, IconXCircle } from './Icons';
+import { IconAlertTriangle, IconDocument, IconHistory, IconSpinner, IconTarget, IconXCircle } from './Icons';
 
 const cardStyle: React.CSSProperties = {
   background: 'var(--bg-surface)',
@@ -71,6 +72,9 @@ export default function HistoryModule() {
   const [seriesLoading, setSeriesLoading] = useState(false);
   const [seriesError, setSeriesError] = useState('');
 
+  const [downloadingSessionId, setDownloadingSessionId] = useState<number | null>(null);
+  const [downloadError, setDownloadError] = useState('');
+
   const locale = language === 'pt' ? 'pt-BR' : 'en-US';
 
   useEffect(() => {
@@ -111,6 +115,18 @@ export default function HistoryModule() {
       )
       .catch((err) => setSeriesError(err instanceof Error ? err.message : t('history.loadError')))
       .finally(() => setSeriesLoading(false));
+  };
+
+  const handleDownloadPdf = async (session: AnalysisSession, evolution: Record<string, EvolutionEntry> | null) => {
+    setDownloadingSessionId(session.id);
+    setDownloadError('');
+    try {
+      await downloadHistorySessionPdf({ session, evolution: evolution ?? null, language });
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : t('history.downloadPdfError'));
+    } finally {
+      setDownloadingSessionId(null);
+    }
   };
 
   return (
@@ -228,10 +244,29 @@ export default function HistoryModule() {
             </div>
           )}
 
+          {downloadError && (
+            <div
+              style={{
+                background: 'var(--danger-bg)',
+                color: 'var(--danger-text)',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid var(--danger-border)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <IconXCircle size={18} /> {downloadError}
+            </div>
+          )}
+
           {series && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {series.sessions.map((session) => {
                 const evolution = series.evolutionBySessionId[String(session.id)];
+                const isDownloading = downloadingSessionId === session.id;
                 return (
                   <div key={session.id} style={cardStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
@@ -241,7 +276,30 @@ export default function HistoryModule() {
                           {t('history.column.engine')}: <strong>{session.ai_engine}</strong>
                         </p>
                       </div>
-                      <VariantsBadge session={session} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <VariantsBadge session={session} />
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPdf(session, evolution ?? null)}
+                          disabled={isDownloading}
+                          style={{
+                            background: 'var(--bg-surface-alt)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '6px',
+                            padding: '0.35rem 0.7rem',
+                            fontSize: '0.78rem',
+                            cursor: isDownloading ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {isDownloading ? <IconSpinner size={13} /> : <IconDocument size={13} />}{' '}
+                          {isDownloading ? t('history.downloadingPdf') : t('history.downloadPdf')}
+                        </button>
+                      </div>
                     </div>
 
                     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)' }}>
